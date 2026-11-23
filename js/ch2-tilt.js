@@ -1,4 +1,4 @@
-// Chapter 2: a tilt is a mix of "fine" and "flipped".
+// Step 2: a tilt is a mix of "fine" and "flipped".
 (() => {
   const $ = SIM.$;
   const cv = $('ch2-globe');
@@ -9,7 +9,7 @@
     $('ch2-thetav').textContent = deg + '°';
     const d = SIM.fit(cv), ctx = cv.getContext('2d');
     ctx.clearRect(0, 0, cv.width, cv.height);
-    SIM.globe(ctx, cv.width / 2, cv.height / 2 + 6 * d, cv.width * 0.34, d, 0, th);
+    SIM.globe(ctx, cv.width / 2, cv.height / 2, cv.width * 0.3, d, 0, th);
     const c = Math.cos(th / 2), s = Math.sin(th / 2);
     $('ch2-bar-fine').style.width = (100 * c * c) + '%';
     $('ch2-bar-flip').style.width = (100 * s * s) + '%';
@@ -26,6 +26,7 @@
     for (let i = 0; i < 1000; i++) Math.random() < p ? counts.flip++ : counts.fine++;
     render();
   };
+  SIM.draggable(cv, render);
   window.addEventListener('resize', render);
   render();
 })();

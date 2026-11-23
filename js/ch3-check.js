@@ -1,22 +1,18 @@
-// Chapter 3: one stabilizer check, step by step, then many shots.
+// Step 3: one stabilizer check, step by step, then many shots.
 (() => {
   const $ = SIM.$, T = SIM.t;
   const base = [0.2, 0.5, 1.2, 0.9, 0.3, 0.1, 0.6, 0.25]; // hidden tilt per round (radians), before scaling
-  const NR = 8, SHOTS = 2000;
+  const NR = 8;
   let S, auto = null;
 
   const prof = () => base.map(v => v * +$('ch3-scale').value);
   function reset() { S = { r: 0, st: 0, th: 0, fl: false, anc: '|0⟩', out: null, p: 0, s: [], d: [], shots: null, anim: false }; }
 
   function draw() {
-    const cx = 105, cy = 120, R = 68, a = (S.fl ? Math.PI : 0) + S.th;
-    const ex = cx + R * Math.cos(a), ey = cy - R * Math.sin(a);
-    let h = T(105, 22, 'Data qubit (rotating frame)', { c: 'var(--text2)' });
-    h += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--border-strong)"/>`;
-    h += T(cx + R + 6, cy - 10, '+', { a: 'start', w: 600 }) + T(cx - R - 6, cy - 10, '−', { a: 'end', w: 600 });
-    h += `<line x1="${cx}" y1="${cy}" x2="${cx + R}" y2="${cy}" stroke="var(--gray)" stroke-width="2" stroke-dasharray="6 5"/>`;
-    h += `<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="var(--coral)" stroke-width="3"/><circle cx="${ex}" cy="${ey}" r="5" fill="var(--coral)"/>`;
-    h += T(cx, cy + R + 22, 'tilt θ = ' + SIM.deg(S.th) + '°', { c: 'var(--coral-dark)' });
+    const cx = 105, cy = 112, R = 62, a = (S.fl ? Math.PI : 0) + S.th;
+        let h = T(105, 22, 'Data qubit (rotating frame)', { c: 'var(--text2)' });
+    h += SIM.blochSVG(cx, cy, R, 0, a);
+    h += T(cx, cy + R + 28, 'tilt θ = ' + SIM.deg(S.th) + '°', { c: 'var(--coral-dark)' });
     const on = S.st >= 2 && S.st <= 5;
     h += `<rect x="228" y="52" width="170" height="130" rx="8" fill="none" stroke="${on ? 'var(--accent)' : 'var(--border)'}" stroke-width="${on ? 2 : 1}"/>`;
     h += T(313, 74, 'Ancilla', { c: 'var(--text2)' }) + T(313, 124, S.anc, { s: S.anc.length > 6 ? 16 : 24, w: 600 });
@@ -30,7 +26,7 @@
     const x0 = 180, dx = 60;
     h += `<line x1="20" y1="222" x2="660" y2="222" stroke="var(--border)"/>`;
     [['true tilt (hidden), rad', 256], ['syndrome s', 282], ['detection d', 308]].forEach(([n, y]) => h += T(20, y, n, { a: 'start', s: 12, c: 'var(--text2)' }));
-    if (S.shots) [['detections / ' + SHOTS.toLocaleString(), 344], ['recovered tilt, rad', 372]].forEach(([n, y]) => h += T(20, y, n, { a: 'start', s: 12, c: 'var(--text2)' }));
+    if (S.shots) [['detections / ' + S.shots.n.toLocaleString(), 344], ['recovered tilt, rad', 372]].forEach(([n, y]) => h += T(20, y, n, { a: 'start', s: 12, c: 'var(--text2)' }));
     for (let r = 0; r < NR; r++) {
       const x = x0 + dx * r;
       h += T(x, 236, 'R' + (r + 1), { s: 11, c: r === S.r && S.st < 7 ? 'var(--accent)' : 'var(--muted)', w: r === S.r ? 600 : 400 });
@@ -39,7 +35,7 @@
         h += T(x, 308, S.d[r], { w: S.d[r] ? 700 : 400, c: S.d[r] ? 'var(--coral)' : 'var(--text)' });
       }
       if (S.shots) {
-        const k = S.shots.k[r], f = k / SHOTS;
+        const k = S.shots.k[r], f = k / S.shots.n;
         h += T(x, 344, k, { s: 12 }) + T(x, 372, (2 * Math.asin(Math.sqrt(f))).toFixed(2), { s: 12, c: 'var(--accent)', w: 600 });
       }
     }
@@ -55,7 +51,7 @@
     () => `<b>Read the tag.</b> A Hadamard and a measurement force one answer. Chance of “1” was ${(100 * S.p).toFixed(1)}%. Result: <b>${S.out}</b>.`,
     () => `<b>Tilt erased.</b> The data qubit snaps fully to ${S.fl ? '|−⟩ (flipped)' : '|+⟩ (fine)'}. The tilt is gone; it only set the odds.`,
     () => `<b>Record.</b> Syndrome s = ${S.s[S.r]}, detection d = ${S.d[S.r]} ${S.d[S.r] ? '(the answer changed!)' : '(no change)'}. The next round starts from zero tilt.`,
-    () => '<b>One shot done.</b> A decoder only ever sees the detection row. Run many shots to recover the hidden tilt of each round from how often it fired.'
+    () => '<b>That\'s one full shot!</b> Notice that a decoder would only ever see the detection row. To find out how much phase was hiding in each round, type a number of shots below and run them.'
   ];
   function show() { $('ch3-cap').innerHTML = msg[S.st](); draw(); }
 
@@ -96,6 +92,8 @@
     $('ch3-auto').textContent = 'Pause';
   };
   $('ch3-shots').onclick = () => {
+    const SHOTS = SIM.readCount('ch3-n', 'ch3-err', 10, 100000);
+    if (SHOTS === null) return;
     // Each round fires in a shot exactly when the qubit flips in that round (d_r = flip_r).
     const p = prof().map(SIM.pFlip), k = Array(NR).fill(0);
     let sum = 0, n = 0;
@@ -104,8 +102,8 @@
       for (let r = 0; r < NR; r++) if (Math.random() < p[r]) { k[r]++; if (!first) first = r + 1; }
       if (first) { sum += first; n++; }
     }
-    S.shots = { k, first: n ? sum / n : 0 };
-    $('ch3-cap').innerHTML = `<b>${SHOTS.toLocaleString()} shots.</b> Each round fired in a fraction f of shots. Turning f back into an angle, 2·arcsin√f, recovers the hidden tilt (blue row). Compare it with the grey hidden row.`;
+    S.shots = { k, n: SHOTS, first: n ? sum / n : 0 };
+    $('ch3-cap').innerHTML = `<b>You just ran ${SHOTS.toLocaleString()} shots.</b> For each round, count how many shots fired and divide by ${SHOTS.toLocaleString()} to get a fraction f. Turning f back into an angle with 2·arcsin√f recovers the hidden tilt (blue row). Compare it with the grey row, which is the truth the decoder never sees. More shots make the blue row closer to the grey one.`;
     draw();
   };
   $('ch3-reset').onclick = () => { stopAuto(); reset(); show(); };

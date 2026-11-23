@@ -1,4 +1,4 @@
-// Chapter 6: the MWPM decoder on a distance-3 rotated surface code (Z errors, X checks, one perfect round).
+// Step 6: the MWPM decoder on a distance-3 rotated surface code (Z errors, X checks, one perfect round).
 (() => {
   const $ = SIM.$, T_ = SIM.t;
   // Data qubits Q1..Q9 on a 3×3 grid.
@@ -119,7 +119,7 @@
     const dec = options(game.err)[0];
     if (!game.revealed) {
       $('ch6-sv').innerHTML = lattice({ fired: now, quiet, errs: game.err, showErr: false, corr: game.uc });
-      $('ch6-cap').innerHTML = `<b>You are the decoder.</b> The errors are hidden. Click qubits to flip them (blue ring) until no check is firing. Use as few flips as you can.${game.msg ? '<br><span style="color:var(--coral-dark)">' + game.msg + '</span>' : ''}` + hoverText();
+      $('ch6-cap').innerHTML = `<b>Your turn to be the detective.</b> The flips are hidden; you only see which checks fired. Click qubits to flip them back (blue ring) until no check is firing, using as few flips as you can.${game.msg ? '<br><span style="color:var(--coral-dark)">' + game.msg + '</span>' : ''}` + hoverText();
     } else {
       const res = xor(game.err, game.uc), lg = isLogical(res);
       $('ch6-sv').innerHTML = lattice({ fired: [], errs: game.err, showErr: true, corr: game.uc, res, paths: game.showDec ? dec.paths : null, dashed: true });
@@ -132,7 +132,8 @@
 
   // ---------------- many trials ----------------
   function runTrials() {
-    const p = +$('ch6-p').value, N = 20000, byK = {};
+    const N = SIM.readCount('ch6-n', 'ch6-err', 100, 200000); if (N === null) return;
+    const p = +$('ch6-p').value, byK = {};
     let fail = 0;
     for (let i = 0; i < N; i++) {
       const e = Array.from({ length: 9 }, () => Math.random() < p ? 1 : 0), k = Math.min(3, e.reduce((a, b) => a + b, 0));
@@ -168,7 +169,7 @@
   $('ch6-new').onclick = () => { newPuzzle(); render(); };
   $('ch6-submit').onclick = () => {
     if (game.revealed) return;
-    if (syndrome(xor(game.err, game.uc)).length) { game.msg = 'Some checks are still firing. Keep flipping until every check is quiet.'; return render(); }
+    if (syndrome(xor(game.err, game.uc)).length) { game.msg = 'Not quite yet: some checks are still firing. Keep going until every check is quiet.'; return render(); }
     game.revealed = true; game.n++; if (!isLogical(xor(game.err, game.uc))) game.win++; render();
   };
   $('ch6-showdec').onclick = () => { if (game.revealed) { game.showDec = !game.showDec; render(); } };

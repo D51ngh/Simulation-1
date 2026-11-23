@@ -1,11 +1,11 @@
-// Chapter 8: Simulation Lab.
+// Simulation Lab.
 // One X stabilizer with four data qubits (Q1 top, Q2 right, Q3 bottom, Q4 left).
 // The user controls the noise (start time, duration, decay, strength, memory, propagation)
 // and the circuit timing (reset, Hadamard, CNOT, readout, electronics delay, cycle time).
 // Time step: 1 ns. Noise acts as a frequency shift δω_q(t) on each data qubit (Z rotation).
 (() => {
   const $ = SIM.$, T_ = SIM.t;
-  const NR = 8, SHOTS = 2000;
+  const NR = 8;
   const POS = [[150, 62], [250, 150], [150, 238], [50, 150]];
 
   // ---------------- parameters ----------------
@@ -114,10 +114,8 @@
     h += `<circle cx="150" cy="150" r="40" fill="${fired ? 'var(--coral-bg)' : 'var(--surface)'}" stroke="${fired ? 'var(--coral)' : act >= 0 ? 'var(--accent)' : 'var(--border-strong)'}" stroke-width="${fired || act >= 0 ? 2.5 : 1}"/>`;
     h += T_(150, 144, 'Ancilla', { s: 11, c: 'var(--text2)' }) + T_(150, 162, fired ? 'FIRED' : phaseText(tc), { s: 11, w: 600, c: fired ? 'var(--coral-dark)' : 'var(--text)' });
     POS.forEach(([x, y], q) => {
-      const R = 30, a = cur.ang[q * p.N + ti], ex = x + R * Math.cos(a), ey = y - R * Math.sin(a), noisy = Math.abs(cur.dw[q * p.N + ti]) > 0;
-      h += `<circle cx="${x}" cy="${y}" r="${R}" fill="var(--surface)" stroke="${noisy ? 'var(--coral)' : 'var(--border-strong)'}" stroke-width="${noisy ? 2.5 : 1}"/>`;
-      h += `<line x1="${x}" y1="${y}" x2="${x + R}" y2="${y}" stroke="var(--gray)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
-      h += `<line x1="${x}" y1="${y}" x2="${ex}" y2="${ey}" stroke="var(--coral)" stroke-width="2.5"/><circle cx="${ex}" cy="${ey}" r="4" fill="var(--coral)"/>`;
+      const R = 30, a = cur.ang[q * p.N + ti], noisy = Math.abs(cur.dw[q * p.N + ti]) > 0;
+      h += SIM.blochSVG(x, y, R, 0, a, { small: true, ring: noisy ? 'var(--coral)' : null, ringW: noisy ? 2.5 : 1 });
       const lx = q === 3 ? x : x, ly = q === 0 ? y - R - 8 : y + R + 14;
       h += T_(lx, ly, `Q${q + 1} · ${SIM.deg(a)}°`, { s: 11, w: 600, c: noisy ? 'var(--coral-dark)' : 'var(--text)' });
     });
@@ -127,7 +125,7 @@
     // Schedule bar for one cycle.
     const W = 360, X = v => 10 + v / p.T * (W - 20);
     const segs = [[S.reset, 'Reset', 'none'], [S.h1, 'H', 'none'], ...S.cnot.map((c, q) => [c, 'Q' + (q + 1), 'var(--accent-bg)']), [S.h2, 'H', 'none'], [S.ro, 'Readout', 'var(--neutral)'], [[S.ro[1], p.T], 'Idle', 'none']];
-    let g = T_(10, 16, `One cycle: T = ${p.T} ns${p.T > p.Tset ? ' (raised to fit the gates)' : ''}`, { a: 'start', s: 12, c: 'var(--text2)' });
+    let g = T_(10, 16, `One round: T = ${p.T} ns${p.T > p.Tset ? ' (made longer so everything fits)' : ''}`, { a: 'start', s: 12, c: 'var(--text2)' });
     segs.forEach(([[a, b], l, fill]) => {
       if (b <= a) return;
       g += `<rect x="${X(a)}" y="26" width="${X(b) - X(a)}" height="26" fill="${fill}" stroke="var(--border-strong)" stroke-width="0.75"/>`;
@@ -170,17 +168,17 @@
   function summary() {
     const el = $('lab-ans');
     const peakKHz = Math.round(p.fMHz * 1000);
-    const parts = [`Noise: ${peakKHz} kHz peak on Q${p.nq + 1} from ${p.tn} ns for ${p.dur} ns${p.noDecay ? ', no decay' : `, decays with ${p.td} ns`}${p.type === 'ou' ? `, OU fluctuations with τc = ${p.tc} ns` : ', steady'}${p.prop ? `; spreads clockwise every ${p.hop} ns keeping ${Math.round(p.keep * 100)}% per hop` : ''}.`];
+    const parts = [`<b>Your noise:</b> ${peakKHz} kHz on Q${p.nq + 1}, starting at ${p.tn} ns and lasting ${p.dur} ns${p.noDecay ? ' without fading' : `, fading over ${p.td} ns`}${p.type === 'ou' ? `, wandering with a memory of ${p.tc} ns` : ', as a steady push'}${p.prop ? `. It then travels clockwise, reaching the next qubit every ${p.hop} ns with ${Math.round(p.keep * 100)}% of its strength` : ''}.`];
     if (t >= p.N - 1 || !playing) {
-      if (cur.first && cur.first.t <= t + 1) parts.push(`<b>This shot:</b> the stabilizer first fired in <b>round ${cur.first.r}</b>, answer known at ${cur.first.t} ns, <b>latency ${cur.first.t - p.tn} ns</b> after the noise started.`);
-      else if (t >= p.N - 1) parts.push('<b>This shot:</b> no detection in 8 rounds. The tilt stayed small, or two flips cancelled in the parity.');
-    } else if (cur.first && cur.first.t <= t) parts.push(`<b>Fired in round ${cur.first.r}</b> · latency ${cur.first.t - p.tn} ns.`);
+      if (cur.first && cur.first.t <= t + 1) parts.push(`<b>In this run</b> the helper first raised the alarm in <b>round ${cur.first.r}</b>. The answer arrived at ${cur.first.t} ns, so it took <b>${cur.first.t - p.tn} ns</b> from the noise starting to it being noticed.`);
+      else if (t >= p.N - 1) parts.push('<b>In this run</b> the helper never raised the alarm in 8 rounds. Either the tilt stayed too small to cause a flip, or two flips cancelled each other out. Try another run: luck plays a part.');
+    } else if (cur.first && cur.first.t <= t) parts.push(`<b>Alarm in round ${cur.first.r}!</b> Noticed ${cur.first.t - p.tn} ns after the noise started.`);
     el.innerHTML = parts.join('<br>');
   }
 
   function render() { drawLive(); drawTimeline(); summary(); }
 
-  function runStats() {
+  function runStats(SHOTS) {
     const lat = [], byRound = Array(NR).fill(0); let det = 0;
     for (let i = 0; i < SHOTS; i++) {
       const o = shot(p, false);
@@ -191,18 +189,18 @@
     const mean = lat.length ? lat.reduce((a, b) => a + b, 0) / lat.length : 0, med = lat.length ? lat[Math.floor(lat.length / 2)] : 0;
     stats = { det, mean, med, byRound };
     $('lab-stats').innerHTML = `<div class="stats">
-      <div class="stat"><span>Shots with a detection</span><b>${(100 * det / SHOTS).toFixed(1)}%</b></div>
-      <div class="stat"><span>Mean latency</span><b>${det ? Math.round(mean) + ' ns' : '—'}</b></div>
-      <div class="stat"><span>Median latency</span><b>${det ? Math.round(med) + ' ns' : '—'}</b></div></div>
+      <div class="stat"><span>Runs where the alarm went off</span><b>${(100 * det / SHOTS).toFixed(1)}%</b></div>
+      <div class="stat"><span>Average time to notice</span><b>${det ? Math.round(mean) + ' ns' : '—'}</b></div>
+      <div class="stat"><span>Typical time to notice (median)</span><b>${det ? Math.round(med) + ' ns' : '—'}</b></div></div>
       <table class="simple"><tr><th>Round</th>${byRound.map((_, r) => `<th>R${r + 1}</th>`).join('')}</tr>
-      <tr><td>Detection rate</td>${byRound.map(k => `<td>${(100 * k / SHOTS).toFixed(1)}%</td>`).join('')}</tr></table>
-      <p class="note">${SHOTS.toLocaleString()} shots with these exact settings. Latency is measured from the noise start time to the moment the first detection's answer reaches the electronics.</p>`;
+      <tr><td>Alarm went off</td>${byRound.map(k => `<td>${(100 * k / SHOTS).toFixed(1)}%</td>`).join('')}</tr></table>
+      <p class="note">Based on ${SHOTS.toLocaleString()} shots with these exact settings. Latency is the time from when the noise starts to when the first detection's answer reaches the electronics. With more shots the percentages wobble less (roughly ±${(100 / Math.sqrt(SHOTS)).toFixed(1)}%).</p>`;
   }
 
-  function newShot() { p = P(); cur = shot(p, true); t = 0; stats = null; $('lab-stats').innerHTML = '<p class="note">Press “Run 2,000 shots” for statistics with the current settings.</p>'; render(); }
+  function newShot() { p = P(); cur = shot(p, true); t = 0; stats = null; $('lab-stats').innerHTML = '<p class="note">Type how many shots you want, then press “Run shots” to see the statistics for these settings.</p>'; render(); }
   function loop(ts) {
     const dt = (ts - last) / 1000; last = ts;
-    if (playing) { t = Math.min(p.N - 1, t + Math.min(dt, 0.1) * +$(ids.speed).value); if (t >= p.N - 1) { playing = false; $('lab-play').textContent = 'Play'; } render(); }
+    if (playing) { t = Math.min(p.N - 1, t + Math.min(dt, 0.1) * +$(ids.speed).value); if (t >= p.N - 1) { playing = false; $('lab-play').textContent = 'Play this run'; } render(); }
     requestAnimationFrame(loop);
   }
 
@@ -220,7 +218,7 @@
     const el = $(ids[k]); label(k);
     el.addEventListener(el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input', () => {
       label(k); if (k === 'speed') return;
-      playing = false; $('lab-play').textContent = 'Play'; newShot();
+      playing = false; $('lab-play').textContent = 'Play this run'; newShot();
     });
   });
   const presets = {
@@ -232,12 +230,17 @@
   document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
     const pr = presets[b.dataset.preset];
     Object.entries(pr).forEach(([k, v]) => { const el = $(ids[k]); if (el.type === 'checkbox') el.checked = v; else el.value = v; label(k); });
-    playing = false; $('lab-play').textContent = 'Play'; newShot();
+    playing = false; $('lab-play').textContent = 'Play this run'; newShot();
   });
-  $('lab-play').onclick = () => { if (t >= p.N - 1) t = 0; playing = !playing; $('lab-play').textContent = playing ? 'Pause' : 'Play'; };
-  $('lab-new').onclick = () => { playing = false; $('lab-play').textContent = 'Play'; newShot(); };
-  $('lab-end').onclick = () => { playing = false; $('lab-play').textContent = 'Play'; t = p.N - 1; render(); };
-  $('lab-run').onclick = () => { $('lab-stats').innerHTML = '<p class="note">Running…</p>'; setTimeout(runStats, 20); };
+  $('lab-play').onclick = () => { if (t >= p.N - 1) t = 0; playing = !playing; $('lab-play').textContent = playing ? 'Pause' : 'Play this run'; };
+  $('lab-new').onclick = () => { playing = false; $('lab-play').textContent = 'Play this run'; newShot(); };
+  $('lab-end').onclick = () => { playing = false; $('lab-play').textContent = 'Play this run'; t = p.N - 1; render(); };
+  $('lab-run').onclick = () => {
+    const n = SIM.readCount('lab-n', 'lab-err', 10, 20000);
+    if (n === null) return;
+    $('lab-stats').innerHTML = `<p class="note">Running ${n.toLocaleString()} shots…</p>`;
+    setTimeout(() => runStats(n), 20);
+  };
   newShot();
   requestAnimationFrame(ts => { last = ts; loop(ts); });
 

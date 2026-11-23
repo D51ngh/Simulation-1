@@ -1,4 +1,4 @@
-// Chapter 4: measuring often (Zeno effect) and detection latency vs cycle time.
+// Step 4: measuring often (Zeno effect) and detection latency vs cycle time.
 (() => {
   const $ = SIM.$;
 

@@ -1,4 +1,4 @@
-// Chapter 5: one X stabilizer with four data qubits, its gate schedule, and when it fires.
+// Step 5: one X stabilizer with four data qubits, its gate schedule, and when it fires.
 (() => {
   const $ = SIM.$, T_ = SIM.t;
   const T = 1000, CE = [180, 240, 300, 360], MEAS = 680, RES = 780, NR = 6; // ns
@@ -61,10 +61,8 @@
     h += `<circle cx="340" cy="170" r="46" fill="${fired ? 'var(--coral-bg)' : 'var(--surface)'}" stroke="${fired ? 'var(--coral)' : act >= 0 ? 'var(--accent)' : 'var(--border-strong)'}" stroke-width="${fired || act >= 0 ? 2.5 : 1}"/>`;
     h += T_(340, 162, 'Ancilla', { s: 12, c: 'var(--text2)' }) + T_(340, 182, fired ? 'FIRED' : ph, { s: 12, w: 600, c: fired ? 'var(--coral-dark)' : 'var(--text)' });
     pos.forEach(([x, y], q) => {
-      const R = 34, a = S.base[q] * Math.PI + S.tilt[q], ex = x + R * Math.cos(a), ey = y - R * Math.sin(a), hitq = c.q === q && S.hit;
-      h += `<circle cx="${x}" cy="${y}" r="${R}" fill="var(--surface)" stroke="${hitq ? 'var(--coral)' : 'var(--border-strong)'}" stroke-width="${hitq ? 2 : 1}"/>`;
-      h += `<line x1="${x}" y1="${y}" x2="${x + R}" y2="${y}" stroke="var(--gray)" stroke-width="1.5" stroke-dasharray="4 4"/>`;
-      h += `<line x1="${x}" y1="${y}" x2="${ex}" y2="${ey}" stroke="var(--coral)" stroke-width="2.5"/><circle cx="${ex}" cy="${ey}" r="4" fill="var(--coral)"/>`;
+      const R = 34, a = S.base[q] * Math.PI + S.tilt[q], hitq = c.q === q && S.hit;
+      h += SIM.blochSVG(x, y, R, 0, a, { small: true, ring: hitq ? 'var(--coral)' : null, ringW: hitq ? 2 : 1 });
       const lx = q === 3 ? x - R - 8 : x + R + 8, an = q === 3 ? 'end' : 'start', deg = SIM.deg(a);
       h += T_(lx, y - 6, 'Q' + (q + 1), { a: an, w: 600 }) + T_(lx, y + 10, 'tilt ' + deg + '°', { a: an, s: 12, c: deg ? 'var(--coral-dark)' : 'var(--text2)' });
       if (tc >= CE[q] && tc < MEAS) h += T_(lx, y + 25, 'checked', { a: an, s: 11, c: 'var(--accent)' });
@@ -104,7 +102,7 @@
     const c = cfg(), el = $('ch5-ans');
     if (S.first) el.innerHTML = `Noise hit <b>Q${c.q + 1}</b> at ${c.t0} ns. The stabilizer first fired in <b>round ${S.first.r}</b>; the answer was known at ${S.first.t} ns. <b>Detection latency: ${S.first.t - c.t0} ns.</b>`;
     else if (S.t >= NR * T) el.innerHTML = c.md === 'grad' ? 'No detection in 6 rounds. Gradual noise only fires with some chance each round; restart, or raise the extra spin.' : 'No detection in 6 rounds: the hit came after the last check.';
-    else el.innerHTML = S.hit ? `Q${c.q + 1} has been hit. Waiting for a check to catch it…` : `Waiting for the noise to hit Q${c.q + 1} at ${c.t0} ns. Press Play.`;
+    else el.innerHTML = S.hit ? `Q${c.q + 1} has been hit. Waiting for a check to catch it…` : `Waiting for the noise to hit Q${c.q + 1} at ${c.t0} ns. Press Play to watch.`;
   }
   function loop(ts) { const dt = (ts - last) / 1000; last = ts; if (playing) { advance(Math.min(dt, 0.1) * +$('ch5-speed').value); answer(); } draw(); requestAnimationFrame(loop); }
   $('ch5-play').onclick = () => { if (S.t >= NR * T) reset(); playing = !playing; $('ch5-play').textContent = playing ? 'Pause' : 'Play'; };

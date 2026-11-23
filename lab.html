@@ -7,6 +7,8 @@
 <meta name="description" content="Control the noise and the stabilizer circuit timing, and see when a weight-4 stabilizer first detects the noise.">
 <link rel="stylesheet" href="css/style.css">
 <style>
+  .err { font-size: 13px; color: var(--coral-dark); }
+  input[type=number] { font: inherit; font-size: 14px; width: 110px; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); }
   .lab { max-width: 1180px; margin: 0 auto; padding: 0 24px 60px; }
   .labhero { max-width: 1180px; margin: 0 auto; padding: 40px 24px 8px; }
   .labhero h1 { font-size: 30px; font-weight: 600; margin: 0 0 6px; }
@@ -33,15 +35,15 @@
 <body>
 
 <header class="labhero">
-  <div class="kicker">Simulation 1 · Lab</div>
-  <h1>Simulation Lab: noise, gate timing and detection</h1>
-  <p>One X stabilizer checks four data qubits (Q1 top, Q2 right, Q3 bottom, Q4 left). Set the noise and the circuit timing on the left. Play one shot to watch it, or run 2,000 shots for statistics.</p>
-  <p class="note">New to the ideas here? Start with the <a href="index.html" style="color:var(--accent)">step-by-step walkthrough</a>. Timing and noise values are adjustable illustrations, not measured device data.</p>
+  <div class="kicker">Simulation 1 · Your own lab</div>
+  <h1>Simulation Lab: you set the noise and the timing</h1>
+  <p>This is your playground. One helper qubit (the ancilla) checks four data qubits, drawn as Bloch spheres: Q1 at the top, Q2 on the right, Q3 at the bottom and Q4 on the left. On the left you decide what the noise does and how fast the circuit runs. Then play a single run to watch it happen, or run as many runs as you like to see the overall picture.</p>
+  <p class="note">New to these ideas? The <a href="index.html" style="color:var(--accent)">guided tour</a> explains everything step by step. All numbers here are settings you choose to explore, not measurements from a real device.</p>
 </header>
 
 <div class="lab">
   <div class="presets">
-    <span class="note" style="align-self:center">Presets:</span>
+    <span class="note" style="align-self:center">Not sure where to start? Try a preset:</span>
     <button data-preset="typical">Typical transmon drift (15 kHz, OU)</button>
     <button data-preset="burst">Strong TLS burst (140 kHz)</button>
     <button data-preset="spread">Burst spreading across qubits</button>
@@ -52,40 +54,40 @@
     <!-- ============ CONTROLS ============ -->
     <div>
       <fieldset>
-        <legend>Noise source</legend>
+        <legend>1 · The noise</legend>
         <div class="f"><label for="lab-nq">Starts on qubit</label><span></span>
           <select id="lab-nq"><option value="0">Q1 (top)</option><option value="1">Q2 (right)</option><option value="2">Q3 (bottom)</option><option value="3">Q4 (left)</option></select></div>
         <div class="f"><label for="lab-tn">Start time t<sub>n</sub></label><span class="val" id="lab-tnv"></span>
-          <input type="range" id="lab-tn" min="0" max="6000" step="10" value="300"><span class="hint">When the noise first hits the qubit.</span></div>
+          <input type="range" id="lab-tn" min="0" max="6000" step="10" value="300"><span class="hint">The moment the noise first reaches the qubit.</span></div>
         <div class="f"><label for="lab-dur">Duration</label><span class="val" id="lab-durv"></span>
-          <input type="range" id="lab-dur" min="20" max="8000" step="10" value="2000"><span class="hint">How long the noise acts before it switches off.</span></div>
+          <input type="range" id="lab-dur" min="20" max="8000" step="10" value="2000"><span class="hint">How long the noise keeps acting before it stops.</span></div>
         <div class="f"><label for="lab-td">Decay time t<sub>d</sub></label><span class="val" id="lab-tdv"></span>
-          <input type="range" id="lab-td" min="50" max="20000" step="50" value="1500"><span class="hint">Strength falls as e<sup>−t/t<sub>d</sub></sup> while the noise is on. Slide fully right for no decay.</span></div>
-        <div class="f"><label for="lab-f">Peak strength (frequency shift)</label><span class="val" id="lab-fv"></span>
-          <input type="range" id="lab-f" min="0.005" max="1" step="0.005" value="0.25"><span class="hint">Real transmon shifts are roughly 5–140 kHz.</span></div>
+          <input type="range" id="lab-td" min="50" max="20000" step="50" value="1500"><span class="hint">How quickly the noise fades while it's on (it shrinks as e<sup>−t/t<sub>d</sub></sup>). Slide all the way right if it shouldn't fade at all.</span></div>
+        <div class="f"><label for="lab-f">How strong it is (frequency shift)</label><span class="val" id="lab-fv"></span>
+          <input type="range" id="lab-f" min="0.005" max="1" step="0.005" value="0.25"><span class="hint">For comparison, real transmons see shifts of roughly 5–140 kHz.</span></div>
         <div class="f"><label for="lab-type">Noise type</label><span></span>
-          <select id="lab-type"><option value="steady">Steady shift</option><option value="ou">Fluctuating (OU noise)</option></select></div>
+          <select id="lab-type"><option value="steady">Steady (always the same push)</option><option value="ou">Wandering (OU noise)</option></select></div>
         <div class="f"><label for="lab-tc">OU memory τc</label><span class="val" id="lab-tcv"></span>
-          <input type="range" id="lab-tc" min="10" max="5000" step="10" value="500"><span class="hint">Only for OU: how long the fluctuations remember themselves.</span></div>
+          <input type="range" id="lab-tc" min="10" max="5000" step="10" value="500"><span class="hint">Only for wandering noise: how long it "remembers" where it was.</span></div>
       </fieldset>
 
       <fieldset>
-        <legend>Propagation</legend>
-        <label class="chk"><input type="checkbox" id="lab-prop"> Noise spreads to the next qubits (clockwise)</label>
+        <legend>2 · Spreading</legend>
+        <label class="chk"><input type="checkbox" id="lab-prop"> Let the noise travel on to the next qubits (clockwise)</label>
         <div class="f"><label for="lab-hop">Delay per hop</label><span class="val" id="lab-hopv"></span>
-          <input type="range" id="lab-hop" min="0" max="2000" step="10" value="400"><span class="hint">Time for the disturbance to reach the next qubit.</span></div>
-        <div class="f"><label for="lab-keep">Strength kept per hop</label><span class="val" id="lab-keepv"></span>
+          <input type="range" id="lab-hop" min="0" max="2000" step="10" value="400"><span class="hint">How long it takes to reach the next qubit.</span></div>
+        <div class="f"><label for="lab-keep">How much strength survives each hop</label><span class="val" id="lab-keepv"></span>
           <input type="range" id="lab-keep" min="0.1" max="1" step="0.05" value="0.7"></div>
       </fieldset>
 
       <fieldset>
-        <legend>Circuit timing</legend>
-        <div class="f"><label for="lab-reset">Ancilla reset</label><span class="val" id="lab-resetv"></span><input type="range" id="lab-reset" min="10" max="600" step="10" value="100"></div>
-        <div class="f"><label for="lab-h">Hadamard gate (each)</label><span class="val" id="lab-hv"></span><input type="range" id="lab-h" min="5" max="100" step="5" value="20"></div>
-        <div class="f"><label for="lab-cnot">CNOT gate (each of 4)</label><span class="val" id="lab-cnotv"></span><input type="range" id="lab-cnot" min="10" max="300" step="5" value="60"></div>
-        <div class="f"><label for="lab-ro">Ancilla readout</label><span class="val" id="lab-rov"></span><input type="range" id="lab-ro" min="50" max="2000" step="10" value="300"></div>
-        <div class="f"><label for="lab-delay">Electronics delay</label><span class="val" id="lab-delayv"></span><input type="range" id="lab-delay" min="0" max="1000" step="10" value="100"><span class="hint">Time for the result to reach the decoder.</span></div>
-        <div class="f"><label for="lab-T">Cycle time T</label><span class="val" id="lab-Tv"></span><input type="range" id="lab-T" min="100" max="5000" step="10" value="1000"><span class="hint">Raised automatically if the gates don't fit.</span></div>
+        <legend>3 · The circuit's timetable</legend>
+        <div class="f"><label for="lab-reset">Resetting the helper qubit</label><span class="val" id="lab-resetv"></span><input type="range" id="lab-reset" min="10" max="600" step="10" value="100"></div>
+        <div class="f"><label for="lab-h">Each Hadamard gate (there are two)</label><span class="val" id="lab-hv"></span><input type="range" id="lab-h" min="5" max="100" step="5" value="20"></div>
+        <div class="f"><label for="lab-cnot">Each CNOT gate (one per data qubit)</label><span class="val" id="lab-cnotv"></span><input type="range" id="lab-cnot" min="10" max="300" step="5" value="60"></div>
+        <div class="f"><label for="lab-ro">Reading out the helper qubit</label><span class="val" id="lab-rov"></span><input type="range" id="lab-ro" min="50" max="2000" step="10" value="300"></div>
+        <div class="f"><label for="lab-delay">Electronics delay</label><span class="val" id="lab-delayv"></span><input type="range" id="lab-delay" min="0" max="1000" step="10" value="100"><span class="hint">Time for the answer to travel out of the fridge to the computer that decodes it.</span></div>
+        <div class="f"><label for="lab-T">Length of one round (cycle time T)</label><span class="val" id="lab-Tv"></span><input type="range" id="lab-T" min="100" max="5000" step="10" value="1000"><span class="hint">If everything up to the readout doesn't fit, the Lab makes the round longer for you.</span></div>
       </fieldset>
     </div>
 
@@ -100,38 +102,39 @@
           </div>
         </div>
         <div class="row">
-          <button id="lab-play" class="primary">Play</button>
+          <button id="lab-play" class="primary">Play this run</button>
           <button id="lab-end">Jump to end</button>
-          <button id="lab-new">New random shot</button>
+          <button id="lab-new">Try another run</button>
           <label for="lab-speed">Speed</label><input type="range" id="lab-speed" min="50" max="3000" step="50" value="400" style="width:140px"><span class="val" id="lab-speedv"></span>
         </div>
       </div>
 
       <div class="panel"><svg id="lab-time" viewBox="0 0 680 260"></svg>
-        <p class="note" style="margin:4px 0 0">Orange lines: the frequency error on each qubit over time. Blue ticks: the moment the stabilizer's CNOT looks at that qubit, once per round. “flip”: the measurement turned that qubit's tilt into a full Z flip (hidden from the decoder). Top dots: rounds where the stabilizer fired.</p>
+        <p class="note" style="margin:4px 0 0">How to read this: each orange line shows how hard the noise is pushing that qubit over the whole run. The short blue marks are the moments the helper "looks at" that qubit, once per round. "flip" means a check turned that qubit's tilt into a full flip, which the decoder never sees directly. The dots along the top mark the rounds where the helper raised the alarm.</p>
       </div>
 
       <div class="panel">
-        <div class="row" style="margin-top:0"><button id="lab-run" class="primary">Run 2,000 shots</button><span class="note">Statistics with the current settings</span></div>
+        <div class="row" style="margin-top:0"><label for="lab-n">How many runs (shots)?</label><input type="number" id="lab-n" min="10" max="20000" step="1" value="2000"><button id="lab-run" class="primary">Run shots</button><span class="err" id="lab-err"></span></div>
+        <p class="note" style="margin:0 0 8px">Each shot repeats the whole 8-round run with the same settings but fresh random luck. More shots give steadier numbers but take a little longer.</p>
         <div id="lab-stats"></div>
       </div>
 
       <div class="panel">
-        <h3 style="margin-top:0">How the Lab works</h3>
+        <h3 style="margin-top:0">What's going on under the hood</h3>
         <ul style="font-size:14px;margin:0;padding-left:20px">
-          <li>Each nanosecond, every data qubit picks up phase δω·dt, where δω is the noise's frequency shift on that qubit (steady or OU-fluctuating, scaled by its envelope).</li>
-          <li>The stabilizer “looks at” qubit q at the end of its CNOT. Phase picked up after that moment counts towards the next round.</li>
-          <li>When the readout ends, each qubit's looked-at phase θ becomes a full Z flip with probability sin²(θ/2), and the tilt is erased.</li>
-          <li>The syndrome is the parity of the four qubits: two flips cancel, so a burst that flips two qubits in the same round can go unseen.</li>
-          <li>A detection event fires when the syndrome changes. Its answer reaches the electronics after the readout plus the electronics delay. Latency is measured from the noise start time to that moment.</li>
-          <li>Simplification: each data qubit is treated separately. This gives the correct timing, while a real surface code keeps the qubits in a shared entangled state.</li>
+          <li>Every nanosecond, each data qubit picks up a little phase, δω·dt, where δω is how hard the noise is pushing that qubit right then.</li>
+          <li>The helper "looks at" a qubit at the end of that qubit's CNOT. Any phase picked up after that moment has to wait for the next round.</li>
+          <li>When the readout finishes, each qubit's tilt θ becomes either nothing or a full flip, with chance sin²(θ/2) of a flip, just like in Step 3 of the tour. Either way, the tilt is wiped clean.</li>
+          <li>The helper only reports whether an odd or even number of its qubits flipped. So two flips in the same round cancel out, and a burst can slip by unseen.</li>
+          <li>An alarm (a detection event) goes off when the helper's answer changes from the last round. The latency is the time from when the noise started to when that alarm reaches the electronics.</li>
+          <li>One honest simplification: each data qubit is treated on its own. That gets the timing right, but a real surface code keeps the four qubits in one shared, entangled state.</li>
         </ul>
       </div>
     </div>
   </div>
 </div>
 
-<footer>Simulation 1 · Lab. <a href="index.html" style="color:var(--accent)">Back to the walkthrough</a>.</footer>
+<footer>Simulation 1 · Lab. <a href="index.html" style="color:var(--accent)">Back to the guided tour</a>.</footer>
 
 <script src="js/common.js"></script>
 <script src="js/ch8-lab.js"></script>

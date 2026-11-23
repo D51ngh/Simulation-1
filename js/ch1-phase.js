@@ -1,4 +1,4 @@
-// Chapter 1: correct rotation vs wrong rotation (lab view and rotating frame).
+// Step 1: correct rotation vs wrong rotation (lab view and rotating frame).
 (() => {
   const $ = SIM.$;
   const c1 = $('ch1-lab'), c2 = $('ch1-rot');
@@ -8,7 +8,7 @@
   function draw(canvas, ref, real) {
     const d = SIM.fit(canvas), ctx = canvas.getContext('2d'), w = canvas.width;
     ctx.clearRect(0, 0, w, canvas.height);
-    SIM.globe(ctx, w / 2, canvas.height / 2 + 6 * d, w * 0.34, d, ref, real);
+    SIM.globe(ctx, w / 2, canvas.height / 2, w * 0.3, d, ref, real);
   }
 
   function tick(now) {
@@ -38,5 +38,6 @@
     $('ch1-res').textContent = flipped ? 'flipped' : 'fine';
   };
   $('ch1-reset').onclick = () => { theta = 0; flipped = false; wobble = 0; $('ch1-res').textContent = '—'; };
+  SIM.draggable(c1); SIM.draggable(c2);
   requestAnimationFrame(tick);
 })();
