@@ -34,26 +34,6 @@
   <p>Each angle sets the probability that the check reports a change: P(flip) = sin²(Δθ<sub>r</sub>/2).</p>
 </section>
 <section class="chapter">
-  <h2>Retrieving the angles from syndromes</h2>
-  <p>A single shot gives one bit per round, which cannot determine an angle. Over N shots, the fraction f<sub>r</sub> of shots with a detection in round r estimates sin²(Δθ<sub>r</sub>/2). What can be recovered depends on the noise:</p>
-  <table class="simple">
-    <tr><th>Noise</th><th>Recovered quantity</th><th>Estimate</th></tr>
-    <tr><td>Repeatable (same in every shot, e.g. a reproducible burst)</td><td>Angle per round, |Δθ<sub>r</sub>|; mean shift |δω<sub>r</sub>| ≈ |Δθ<sub>r</sub>|/T</td><td>|Δθ<sub>r</sub>| = 2·arcsin√f<sub>r</sub></td></tr>
-    <tr><td>Random (OU, different in every shot)</td><td>Spread of the angle per round</td><td>Var(Δθ<sub>r</sub>) = −2 ln(1 − 2f<sub>r</sub>)</td></tr>
-    <tr><td>Random (OU), several cycle times</td><td>Noise strength V and memory τc</td><td>Fit Var(Δθ) = 2Vτc²[T/τc − 1 + e<sup>−T/τc</sup>]</td></tr>
-    <tr><td>Random (OU), consecutive rounds</td><td>Noise memory τc (independent check)</td><td>P(detection next | detection now) ÷ P(detection next) &gt; 1 for long memory</td></tr>
-  </table>
-  <h3>Limits</h3>
-  <ul>
-    <li>The sign of Δθ is lost: a qubit running fast and one running slow give the same statistics.</li>
-    <li>Time resolution is one round; fluctuations faster than the cycle time average out.</li>
-    <li>The inversion becomes unreliable as f<sub>r</sub> approaches 0.5 (|Δθ| near 90° or above).</li>
-    <li>The statistical error on f<sub>r</sub> is about √(f<sub>r</sub>/N), so small angles need many shots.</li>
-    <li>For random noise, the exact noise curve of an individual shot cannot be recovered, only its statistics.</li>
-    <li>On hardware, measurement errors add false detections and must be modelled; a weight-4 stabilizer sees only the parity of its four qubits, so neighbouring stabilizers are needed to locate the qubit.</li>
-  </ul>
-</section>
-<section class="chapter">
   <h2>How the recovered information is used</h2>
   <ul>
     <li><b>Decoder weights.</b> The recovered angle size and noise memory give the probability of each error and how errors cluster in time. These set the edge weights of a noise-aware decoder, which then expects further errors near a recent detection.</li>
