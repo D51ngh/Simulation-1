@@ -90,7 +90,7 @@
   function hoverText() {
     if (hover === null) return '';
     const [a, b] = touches(hover).map(n => NAME[n]);
-    return `<br><span class="note">Q${hover + 1} touches ${a} and ${b}. A Z error on it flips ${b.includes('edge') ? 'only ' + a : 'both'}.</span>`;
+    return `<br><span class="note">Q${hover + 1}: ${a}, ${b}.</span>`;
   }
 
   // ---------------- explore ----------------
@@ -99,9 +99,9 @@
     $('ch6-sv').innerHTML = lattice({ fired, errs: err, showErr: true, corr: fired.length ? o.corr : null, paths: o.paths });
     const nErr = err.reduce((a, b) => a + b, 0);
     $('ch6-cap').innerHTML = (fired.length
-      ? `<b>${fired.length} check${fired.length > 1 ? 's' : ''} fired</b> (${fired.map(f => NAME[f]).join(', ')}). The decoder must explain ${fired.length > 1 ? 'them' : 'it'}. Each option on the right is a way to pair them up; the blue path shows the one you selected.`
-      : nErr ? '<b>No check fired</b>, even though there are errors: they cancel inside every check. This is either harmless or a hidden logical error.' : '<b>Click data qubits</b> to add Z errors and watch the X checks react.') + hoverText();
-    $('ch6-pan').innerHTML = '<h3 style="margin-top:0">Ways to explain the checks</h3>' + (fired.length ? ops.slice(0, 6).map((x, i) => `<div class="opt${i === sel ? ' sel' : ''}" data-i="${i}">${x.pairs.map(([a, b]) => NAME[a] + ' ↔ ' + NAME[b]).join('<br>')}<br><span class="note">weight ${x.w} (flips ${x.w} qubit${x.w > 1 ? 's' : ''})</span>${i === 0 ? '<span class="tag best">MWPM picks this</span>' : ''}<span class="tag ${x.logical ? 'bad' : 'good'}">${x.logical ? 'logical error' : 'success'}</span></div>`).join('') + (ops.length > 6 ? `<p class="note">+ ${ops.length - 6} more pairings</p>` : '') + '<p class="note">MWPM always picks the lowest weight: the explanation that needs the fewest errors.</p>' : '<p class="note">Nothing to explain yet.</p>');
+      ? `<b>${fired.length} stabilizer${fired.length > 1 ? 's' : ''} fired:</b> ${fired.map(f => NAME[f]).join(', ')}. Possible matchings are listed on the right; the selected one is shown in blue.`
+      : nErr ? '<b>No stabilizer fired.</b> The errors cancel in every stabilizer: either a stabilizer (harmless) or a logical error.' : 'Click data qubits to place Z errors.') + hoverText();
+    $('ch6-pan').innerHTML = '<h3 style="margin-top:0">Matchings</h3>' + (fired.length ? ops.slice(0, 6).map((x, i) => `<div class="opt${i === sel ? ' sel' : ''}" data-i="${i}">${x.pairs.map(([a, b]) => NAME[a] + ' ↔ ' + NAME[b]).join('<br>')}<br><span class="note">weight ${x.w}</span>${i === 0 ? '<span class="tag best">MWPM</span>' : ''}<span class="tag ${x.logical ? 'bad' : 'good'}">${x.logical ? 'logical error' : 'success'}</span></div>`).join('') + (ops.length > 6 ? `<p class="note">+ ${ops.length - 6} more</p>` : '') + '<p class="note">MWPM selects the lowest total weight.</p>' : '<p class="note">No detection events.</p>');
     document.querySelectorAll('#ch6-pan .opt').forEach(d => d.onclick = () => { sel = +d.dataset.i; renderExplore(); });
   }
 
@@ -119,15 +119,15 @@
     const dec = options(game.err)[0];
     if (!game.revealed) {
       $('ch6-sv').innerHTML = lattice({ fired: now, quiet, errs: game.err, showErr: false, corr: game.uc });
-      $('ch6-cap').innerHTML = `<b>Your turn to be the detective.</b> The flips are hidden; you only see which checks fired. Click qubits to flip them back (blue ring) until no check is firing, using as few flips as you can.${game.msg ? '<br><span style="color:var(--coral-dark)">' + game.msg + '</span>' : ''}` + hoverText();
+      $('ch6-cap').innerHTML = `<b>Manual decoding.</b> Errors are hidden. Select qubits to correct (blue) until no stabilizer fires.${game.msg ? '<br><span style="color:var(--coral-dark)">' + game.msg + '</span>' : ''}` + hoverText();
     } else {
       const res = xor(game.err, game.uc), lg = isLogical(res);
       $('ch6-sv').innerHTML = lattice({ fired: [], errs: game.err, showErr: true, corr: game.uc, res, paths: game.showDec ? dec.paths : null, dashed: true });
-      $('ch6-cap').innerHTML = `<b>${lg ? 'Logical error.' : 'Success!'}</b> Real errors: ${game.err.map((v, i) => v ? 'Q' + (i + 1) : null).filter(Boolean).join(', ')}. Your flips: ${game.uc.map((v, i) => v ? 'Q' + (i + 1) : null).filter(Boolean).join(', ')}. ${lg ? 'Together they leave a chain of Z’s from the left edge to the right edge, so the stored information flipped.' : 'Together they cancel (or form a harmless loop).'}`;
+      $('ch6-cap').innerHTML = `<b>${lg ? 'Logical error.' : 'Correct.'}</b> Errors: ${game.err.map((v, i) => v ? 'Q' + (i + 1) : null).filter(Boolean).join(', ')}. Correction: ${game.uc.map((v, i) => v ? 'Q' + (i + 1) : null).filter(Boolean).join(', ')}.${lg ? ' The residual is a logical Z operator.' : ''}`;
     }
     $('ch6-pan').innerHTML = `<h3 style="margin-top:0">Score: ${game.win} / ${game.n}</h3>
-      <p class="note">Orange checks are still firing. Green ones were firing but your flips have explained them.</p>
-      ${game.revealed ? `<p><b>MWPM's answer:</b> flip ${dec.corr.map((v, i) => v ? 'Q' + (i + 1) : null).filter(Boolean).join(', ')} (weight ${dec.w}) → <span class="tag ${dec.logical ? 'bad' : 'good'}">${dec.logical ? 'logical error' : 'success'}</span></p><p class="note">${dec.logical ? 'Even the best decoder fails here: two errors looked like one error elsewhere. Distance 3 only guarantees fixing one error.' : ''}</p>` : '<p class="note">Tip: hover a qubit to see which checks it touches.</p>'}`;
+      <p class="note">Orange: still firing. Green: resolved.</p>
+      ${game.revealed ? `<p><b>MWPM:</b> flip ${dec.corr.map((v, i) => v ? 'Q' + (i + 1) : null).filter(Boolean).join(', ')} (weight ${dec.w}) → <span class="tag ${dec.logical ? 'bad' : 'good'}">${dec.logical ? 'logical error' : 'success'}</span></p><p class="note">${dec.logical ? 'MWPM also fails: the two errors are equivalent to a lower-weight error elsewhere.' : ''}</p>` : '<p class="note">Hover a qubit to see its stabilizers.</p>'}`;
   }
 
   // ---------------- many trials ----------------
@@ -141,9 +141,9 @@
       byK[k] = byK[k] || [0, 0]; byK[k][0]++; if (lg) { byK[k][1]++; fail++; }
     }
     const pl = fail / N;
-    $('ch6-stat').innerHTML = `<div class="stats"><div class="stat"><span>Unprotected qubit error rate</span><b>${(100 * p).toFixed(1)}%</b></div><div class="stat"><span>Logical error rate with MWPM</span><b>${(100 * pl).toFixed(2)}%</b></div><div class="stat"><span>Better or worse?</span><b>${pl < p ? (p / Math.max(pl, 1e-9)).toFixed(1) + '× better' : 'worse'}</b></div></div>
-      <table class="simple"><tr><th>Errors in the shot</th><th>Shots</th><th>MWPM failed</th></tr>${[0, 1, 2, 3].filter(k => byK[k]).map(k => `<tr><td>${k === 3 ? '3 or more' : k}</td><td>${byK[k][0].toLocaleString()}</td><td>${(100 * byK[k][1] / byK[k][0]).toFixed(1)}%</td></tr>`).join('')}</table>
-      <p class="note">${N.toLocaleString()} random shots, each qubit hit with chance ${(100 * p).toFixed(0)}%, one perfect round of checks. One error is always fixed; failures start at two errors. At low error rates the code wins because two errors are much rarer than one.</p>`;
+    $('ch6-stat').innerHTML = `<div class="stats"><div class="stat"><span>Physical error rate</span><b>${(100 * p).toFixed(1)}%</b></div><div class="stat"><span>Logical error rate (MWPM)</span><b>${(100 * pl).toFixed(2)}%</b></div><div class="stat"><span>Improvement</span><b>${pl < p ? (p / Math.max(pl, 1e-9)).toFixed(1) + '×' : 'none'}</b></div></div>
+      <table class="simple"><tr><th>Errors per trial</th><th>Trials</th><th>Logical error</th></tr>${[0, 1, 2, 3].filter(k => byK[k]).map(k => `<tr><td>${k === 3 ? '3 or more' : k}</td><td>${byK[k][0].toLocaleString()}</td><td>${(100 * byK[k][1] / byK[k][0]).toFixed(1)}%</td></tr>`).join('')}</table>
+      <p class="note">${N.toLocaleString()} trials, independent Z errors with probability ${(100 * p).toFixed(0)}% per qubit, one perfect round. Single errors are always corrected.</p>`;
   }
 
   // ---------------- wiring ----------------
@@ -169,7 +169,7 @@
   $('ch6-new').onclick = () => { newPuzzle(); render(); };
   $('ch6-submit').onclick = () => {
     if (game.revealed) return;
-    if (syndrome(xor(game.err, game.uc)).length) { game.msg = 'Not quite yet: some checks are still firing. Keep going until every check is quiet.'; return render(); }
+    if (syndrome(xor(game.err, game.uc)).length) { game.msg = 'Some stabilizers are still firing.'; return render(); }
     game.revealed = true; game.n++; if (!isLogical(xor(game.err, game.uc))) game.win++; render();
   };
   $('ch6-showdec').onclick = () => { if (game.revealed) { game.showDec = !game.showDec; render(); } };

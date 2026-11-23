@@ -125,7 +125,7 @@
     // Schedule bar for one cycle.
     const W = 360, X = v => 10 + v / p.T * (W - 20);
     const segs = [[S.reset, 'Reset', 'none'], [S.h1, 'H', 'none'], ...S.cnot.map((c, q) => [c, 'Q' + (q + 1), 'var(--accent-bg)']), [S.h2, 'H', 'none'], [S.ro, 'Readout', 'var(--neutral)'], [[S.ro[1], p.T], 'Idle', 'none']];
-    let g = T_(10, 16, `One round: T = ${p.T} ns${p.T > p.Tset ? ' (made longer so everything fits)' : ''}`, { a: 'start', s: 12, c: 'var(--text2)' });
+    let g = T_(10, 16, `One round: T = ${p.T} ns${p.T > p.Tset ? ' (extended to fit operations)' : ''}`, { a: 'start', s: 12, c: 'var(--text2)' });
     segs.forEach(([[a, b], l, fill]) => {
       if (b <= a) return;
       g += `<rect x="${X(a)}" y="26" width="${X(b) - X(a)}" height="26" fill="${fill}" stroke="var(--border-strong)" stroke-width="0.75"/>`;
@@ -142,7 +142,7 @@
     const W = 680, L = 60, Rr = 648, X = v => L + v / p.N * (Rr - L), lane = q => 52 + q * 42;
     let max = 0; for (let i = 0; i < cur.dw.length; i += 3) max = Math.max(max, Math.abs(cur.dw[i]));
     max = max || 1;
-    let h = T_(L, 14, 'Whole shot: frequency error δω on each qubit (orange), when the check looks at it (blue ticks), detections (top)', { a: 'start', s: 11.5, c: 'var(--text2)' });
+    let h = T_(L, 14, 'Frequency error δω per qubit (orange), CNOT sample times (blue), detections (top)', { a: 'start', s: 11.5, c: 'var(--text2)' });
     for (let r = 0; r <= NR; r++) h += `<line x1="${X(r * p.T)}" y1="24" x2="${X(r * p.T)}" y2="222" stroke="var(--border)"/>`;
     for (let r = 0; r < NR; r++) {
       h += T_(X(r * p.T + p.T / 2), 36, 'R' + (r + 1), { s: 11, c: 'var(--muted)' });
@@ -168,11 +168,11 @@
   function summary() {
     const el = $('lab-ans');
     const peakKHz = Math.round(p.fMHz * 1000);
-    const parts = [`<b>Your noise:</b> ${peakKHz} kHz on Q${p.nq + 1}, starting at ${p.tn} ns and lasting ${p.dur} ns${p.noDecay ? ' without fading' : `, fading over ${p.td} ns`}${p.type === 'ou' ? `, wandering with a memory of ${p.tc} ns` : ', as a steady push'}${p.prop ? `. It then travels clockwise, reaching the next qubit every ${p.hop} ns with ${Math.round(p.keep * 100)}% of its strength` : ''}.`];
+    const parts = [`<b>Noise:</b> ${peakKHz} kHz on Q${p.nq + 1}, ${p.tn}–${p.tn + p.dur} ns${p.noDecay ? ', no decay' : `, t<sub>d</sub> = ${p.td} ns`}${p.type === 'ou' ? `, OU (τc = ${p.tc} ns)` : ', steady'}${p.prop ? `; propagates clockwise, ${p.hop} ns and ${Math.round(p.keep * 100)}% per hop` : ''}.`];
     if (t >= p.N - 1 || !playing) {
-      if (cur.first && cur.first.t <= t + 1) parts.push(`<b>In this run</b> the helper first raised the alarm in <b>round ${cur.first.r}</b>. The answer arrived at ${cur.first.t} ns, so it took <b>${cur.first.t - p.tn} ns</b> from the noise starting to it being noticed.`);
-      else if (t >= p.N - 1) parts.push('<b>In this run</b> the helper never raised the alarm in 8 rounds. Either the tilt stayed too small to cause a flip, or two flips cancelled each other out. Try another run: luck plays a part.');
-    } else if (cur.first && cur.first.t <= t) parts.push(`<b>Alarm in round ${cur.first.r}!</b> Noticed ${cur.first.t - p.tn} ns after the noise started.`);
+      if (cur.first && cur.first.t <= t + 1) parts.push(`<b>This shot:</b> first detection in round ${cur.first.r}, result at ${cur.first.t} ns. <b>Latency: ${cur.first.t - p.tn} ns.</b>`);
+      else if (t >= p.N - 1) parts.push('<b>This shot:</b> no detection in 8 rounds.');
+    } else if (cur.first && cur.first.t <= t) parts.push(`<b>Detected in round ${cur.first.r}.</b> Latency ${cur.first.t - p.tn} ns.`);
     el.innerHTML = parts.join('<br>');
   }
 
@@ -189,18 +189,18 @@
     const mean = lat.length ? lat.reduce((a, b) => a + b, 0) / lat.length : 0, med = lat.length ? lat[Math.floor(lat.length / 2)] : 0;
     stats = { det, mean, med, byRound };
     $('lab-stats').innerHTML = `<div class="stats">
-      <div class="stat"><span>Runs where the alarm went off</span><b>${(100 * det / SHOTS).toFixed(1)}%</b></div>
-      <div class="stat"><span>Average time to notice</span><b>${det ? Math.round(mean) + ' ns' : '—'}</b></div>
-      <div class="stat"><span>Typical time to notice (median)</span><b>${det ? Math.round(med) + ' ns' : '—'}</b></div></div>
+      <div class="stat"><span>Shots with a detection</span><b>${(100 * det / SHOTS).toFixed(1)}%</b></div>
+      <div class="stat"><span>Mean latency</span><b>${det ? Math.round(mean) + ' ns' : '—'}</b></div>
+      <div class="stat"><span>Median latency</span><b>${det ? Math.round(med) + ' ns' : '—'}</b></div></div>
       <table class="simple"><tr><th>Round</th>${byRound.map((_, r) => `<th>R${r + 1}</th>`).join('')}</tr>
-      <tr><td>Alarm went off</td>${byRound.map(k => `<td>${(100 * k / SHOTS).toFixed(1)}%</td>`).join('')}</tr></table>
-      <p class="note">Based on ${SHOTS.toLocaleString()} shots with these exact settings. Latency is the time from when the noise starts to when the first detection's answer reaches the electronics. With more shots the percentages wobble less (roughly ±${(100 / Math.sqrt(SHOTS)).toFixed(1)}%).</p>`;
+      <tr><td>Detection rate</td>${byRound.map(k => `<td>${(100 * k / SHOTS).toFixed(1)}%</td>`).join('')}</tr></table>
+      <p class="note">${SHOTS.toLocaleString()} shots. Latency: noise onset to arrival of the first detection result. Statistical uncertainty ≈ ±${(100 / Math.sqrt(SHOTS)).toFixed(1)}%.</p>`;
   }
 
-  function newShot() { p = P(); cur = shot(p, true); t = 0; stats = null; $('lab-stats').innerHTML = '<p class="note">Type how many shots you want, then press “Run shots” to see the statistics for these settings.</p>'; render(); }
+  function newShot() { p = P(); cur = shot(p, true); t = 0; stats = null; $('lab-stats').innerHTML = '<p class="note">Set the number of shots and press Run.</p>'; render(); }
   function loop(ts) {
     const dt = (ts - last) / 1000; last = ts;
-    if (playing) { t = Math.min(p.N - 1, t + Math.min(dt, 0.1) * +$(ids.speed).value); if (t >= p.N - 1) { playing = false; $('lab-play').textContent = 'Play this run'; } render(); }
+    if (playing) { t = Math.min(p.N - 1, t + Math.min(dt, 0.1) * +$(ids.speed).value); if (t >= p.N - 1) { playing = false; $('lab-play').textContent = 'Play'; } render(); }
     requestAnimationFrame(loop);
   }
 
@@ -218,7 +218,7 @@
     const el = $(ids[k]); label(k);
     el.addEventListener(el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input', () => {
       label(k); if (k === 'speed') return;
-      playing = false; $('lab-play').textContent = 'Play this run'; newShot();
+      playing = false; $('lab-play').textContent = 'Play'; newShot();
     });
   });
   const presets = {
@@ -230,11 +230,11 @@
   document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
     const pr = presets[b.dataset.preset];
     Object.entries(pr).forEach(([k, v]) => { const el = $(ids[k]); if (el.type === 'checkbox') el.checked = v; else el.value = v; label(k); });
-    playing = false; $('lab-play').textContent = 'Play this run'; newShot();
+    playing = false; $('lab-play').textContent = 'Play'; newShot();
   });
-  $('lab-play').onclick = () => { if (t >= p.N - 1) t = 0; playing = !playing; $('lab-play').textContent = playing ? 'Pause' : 'Play this run'; };
-  $('lab-new').onclick = () => { playing = false; $('lab-play').textContent = 'Play this run'; newShot(); };
-  $('lab-end').onclick = () => { playing = false; $('lab-play').textContent = 'Play this run'; t = p.N - 1; render(); };
+  $('lab-play').onclick = () => { if (t >= p.N - 1) t = 0; playing = !playing; $('lab-play').textContent = playing ? 'Pause' : 'Play'; };
+  $('lab-new').onclick = () => { playing = false; $('lab-play').textContent = 'Play'; newShot(); };
+  $('lab-end').onclick = () => { playing = false; $('lab-play').textContent = 'Play'; t = p.N - 1; render(); };
   $('lab-run').onclick = () => {
     const n = SIM.readCount('lab-n', 'lab-err', 10, 20000);
     if (n === null) return;

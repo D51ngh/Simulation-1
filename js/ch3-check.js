@@ -44,14 +44,14 @@
   }
 
   const msg = [
-    () => '<b>Start.</b> The data qubit points at |+⟩. Its information is stored in this direction. The ancilla waits in |0⟩.',
-    () => `<b>Round ${S.r + 1} · noise.</b> The qubit spins slightly too fast, so it tilts by θ away from the dashed “correct” arrow.`,
-    () => '<b>Prepare the check.</b> The ancilla is reset to |0⟩, then a Hadamard gate turns it into |+⟩.',
-    () => '<b>CNOT.</b> The fine part of the data tags the ancilla with 0, the flipped part tags it with 1 (phase kickback). The ancilla now carries both tags.',
-    () => `<b>Read the tag.</b> A Hadamard and a measurement force one answer. Chance of “1” was ${(100 * S.p).toFixed(1)}%. Result: <b>${S.out}</b>.`,
-    () => `<b>Tilt erased.</b> The data qubit snaps fully to ${S.fl ? '|−⟩ (flipped)' : '|+⟩ (fine)'}. The tilt is gone; it only set the odds.`,
-    () => `<b>Record.</b> Syndrome s = ${S.s[S.r]}, detection d = ${S.d[S.r]} ${S.d[S.r] ? '(the answer changed!)' : '(no change)'}. The next round starts from zero tilt.`,
-    () => '<b>That\'s one full shot!</b> Notice that a decoder would only ever see the detection row. To find out how much phase was hiding in each round, type a number of shots below and run them.'
+    () => '<b>Start.</b> Data qubit in |+⟩, ancilla in |0⟩.',
+    () => `<b>Round ${S.r + 1}: noise.</b> The frequency error rotates the data qubit by θ.`,
+    () => '<b>Ancilla preparation.</b> Reset to |0⟩, then Hadamard to |+⟩.',
+    () => '<b>CNOT.</b> The |+⟩ component of the data maps to ancilla 0, the |−⟩ component to ancilla 1.',
+    () => `<b>Measurement.</b> Hadamard and readout of the ancilla. P(1) = ${(100 * S.p).toFixed(1)}%. Result: <b>${S.out}</b>.`,
+    () => `<b>Projection.</b> The data qubit is now exactly ${S.fl ? '|−⟩' : '|+⟩'}. The phase error is removed.`,
+    () => `<b>Record.</b> s = ${S.s[S.r]}, d = ${S.d[S.r]}${S.d[S.r] ? ' (syndrome changed)' : ''}.`,
+    () => '<b>Shot complete.</b> The decoder sees only the detection row. Run multiple shots to estimate the phase per round.'
   ];
   function show() { $('ch3-cap').innerHTML = msg[S.st](); draw(); }
 
@@ -103,7 +103,7 @@
       if (first) { sum += first; n++; }
     }
     S.shots = { k, n: SHOTS, first: n ? sum / n : 0 };
-    $('ch3-cap').innerHTML = `<b>You just ran ${SHOTS.toLocaleString()} shots.</b> For each round, count how many shots fired and divide by ${SHOTS.toLocaleString()} to get a fraction f. Turning f back into an angle with 2·arcsin√f recovers the hidden tilt (blue row). Compare it with the grey row, which is the truth the decoder never sees. More shots make the blue row closer to the grey one.`;
+    $('ch3-cap').innerHTML = `<b>${SHOTS.toLocaleString()} shots.</b> Recovered phase per round: θ = 2·arcsin√f, where f is the fraction of shots that fired (blue). Grey is the true value.`;
     draw();
   };
   $('ch3-reset').onclick = () => { stopAuto(); reset(); show(); };

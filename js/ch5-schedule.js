@@ -100,9 +100,9 @@
   }
   function answer() {
     const c = cfg(), el = $('ch5-ans');
-    if (S.first) el.innerHTML = `Noise hit <b>Q${c.q + 1}</b> at ${c.t0} ns. The stabilizer first fired in <b>round ${S.first.r}</b>; the answer was known at ${S.first.t} ns. <b>Detection latency: ${S.first.t - c.t0} ns.</b>`;
-    else if (S.t >= NR * T) el.innerHTML = c.md === 'grad' ? 'No detection in 6 rounds. Gradual noise only fires with some chance each round; restart, or raise the extra spin.' : 'No detection in 6 rounds: the hit came after the last check.';
-    else el.innerHTML = S.hit ? `Q${c.q + 1} has been hit. Waiting for a check to catch it…` : `Waiting for the noise to hit Q${c.q + 1} at ${c.t0} ns. Press Play to watch.`;
+    if (S.first) el.innerHTML = `Error on <b>Q${c.q + 1}</b> at ${c.t0} ns. First detection in <b>round ${S.first.r}</b>, result at ${S.first.t} ns. <b>Latency: ${S.first.t - c.t0} ns.</b>`;
+    else if (S.t >= NR * T) el.innerHTML = c.md === 'grad' ? 'No detection in 6 rounds. With gradual noise, detection is probabilistic.' : 'No detection in 6 rounds: the error occurred after the last check.';
+    else el.innerHTML = S.hit ? `Error on Q${c.q + 1}. Waiting for detection.` : `Error scheduled on Q${c.q + 1} at ${c.t0} ns. Press Play.`;
   }
   function loop(ts) { const dt = (ts - last) / 1000; last = ts; if (playing) { advance(Math.min(dt, 0.1) * +$('ch5-speed').value); answer(); } draw(); requestAnimationFrame(loop); }
   $('ch5-play').onclick = () => { if (S.t >= NR * T) reset(); playing = !playing; $('ch5-play').textContent = playing ? 'Pause' : 'Play'; };

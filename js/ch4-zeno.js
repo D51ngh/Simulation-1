@@ -22,7 +22,7 @@
     [0, 0.1, 0.2, 0.3, 0.4, 0.5].forEach(v => { ctx.beginPath(); ctx.moveTo(L, Y(v)); ctx.lineTo(W - Rm, Y(v)); ctx.stroke(); ctx.fillText(Math.round(v * 100) + '%', L - 6 * d, Y(v)); });
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     [1, 5, 10, 15, 20].forEach(k => ctx.fillText(k, X(k), H - B + 6 * d));
-    ctx.fillText('number of checks the phase is split into', (L + W - Rm) / 2, H - B + 20 * d);
+    ctx.fillText('number of checks', (L + W - Rm) / 2, H - B + 20 * d);
     ctx.strokeStyle = SIM.color('--coral'); ctx.lineWidth = 2.5 * d; ctx.beginPath();
     for (let k = 1; k <= maxN; k++) { const y = Y(endsFlipped(total, k)); k === 1 ? ctx.moveTo(X(k), y) : ctx.lineTo(X(k), y); }
     ctx.stroke();
@@ -61,13 +61,13 @@
     for (let i = 0; i <= 4; i++) { const v = ymax * i / 4; ctx.beginPath(); ctx.moveTo(L, Y(v)); ctx.lineTo(W - Rm, Y(v)); ctx.stroke(); ctx.fillText((v % 1 ? v.toFixed(1) : v) + ' µs', L - 6 * d, Y(v)); }
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     [0.1, 0.5, 1.0, 1.5, 2.0].forEach(T => ctx.fillText(T * 1000 + ' ns', X(T), H - B + 6 * d));
-    ctx.fillText('cycle time T (how often the stabilizer checks)', (L + W - Rm) / 2, H - B + 20 * d);
+    ctx.fillText('cycle time T', (L + W - Rm) / 2, H - B + 20 * d);
     const line = (vals, col, dash) => { ctx.setLineDash(dash.map(v => v * d)); ctx.strokeStyle = col; ctx.lineWidth = 2.5 * d; ctx.beginPath(); vals.forEach((v, i) => i ? ctx.lineTo(X(Ts[i]), Y(v)) : ctx.moveTo(X(Ts[i]), Y(v))); ctx.stroke(); ctx.setLineDash([]); };
     line(clean, SIM.color('--gray'), [6, 5]);
     line(ou, SIM.color('--coral'), []);
     const best = Ts[ou.indexOf(Math.min(...ou))];
     $('ch4-best').textContent = best * 1000 + ' ns';
-    $('ch4-regime').textContent = tc > 1 ? 'slow noise (long memory): checking more often delays detection (Zeno)' : tc < 0.2 ? 'fast noise (short memory): latency barely depends on T' : 'in between: watch the curve bend near T ≈ τc';
+    $('ch4-regime').textContent = tc > 1 ? 'Slow noise: shorter T delays detection (Zeno)' : tc < 0.2 ? 'Fast noise: weak dependence on T' : 'Intermediate: transition near T ≈ τc';
   }
   ['ch4-tc', 'ch4-sig'].forEach(id => $(id).oninput = drawLat);
   window.addEventListener('resize', () => { drawZeno(); drawLat(); });

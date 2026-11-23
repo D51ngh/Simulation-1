@@ -4,12 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Simulation 1 · From phase noise to error correction</title>
-<meta name="description" content="A friendly, hands-on walkthrough: how phase noise on a transmon qubit becomes detection events, and how a decoder corrects it in a distance-3 surface code.">
+<meta name="description" content="Interactive walkthrough of how phase noise on a transmon qubit becomes stabilizer detection events and how a decoder corrects it.">
 <link rel="stylesheet" href="css/style.css">
 <style>
-  .try { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; margin: 14px 0; border-radius: 0; }
-  .try b { color: var(--accent); }
-  .try ul { margin: 6px 0 0; padding-left: 18px; }
   .err { font-size: 13px; color: var(--coral-dark); }
   input[type=number] { font: inherit; font-size: 14px; width: 110px; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); }
 </style>
@@ -17,20 +14,20 @@
 <body>
 
 <header class="hero">
-  <div class="kicker">Simulation 1 · A guided tour</div>
+  <div class="kicker">Simulation 1 · MSQT research</div>
   <h1>From phase noise to error correction</h1>
-  <p>Quantum computers make mistakes all the time. This tour shows you, step by step and with your own hands, how one kind of mistake happens on a superconducting qubit, how the computer notices it, and how it fixes it.</p>
-  <p class="note">You don't need any quantum background. Each step builds on the one before, has a small experiment you can play with, and ends with the one idea to remember. Take your time, click everything, and break things on purpose. When you're done, the <a href="lab.html" style="color:var(--accent)">Simulation Lab</a> lets you set every parameter yourself.</p>
+  <p>This project studies how phase noise on a transmon qubit is detected by stabilizer measurements, and how long detection takes. The seven steps below build the model one piece at a time, each with an interactive simulation.</p>
+  <p class="note">The <a href="lab.html" style="color:var(--accent)">Simulation Lab</a> lets you set every noise and timing parameter directly. All values are illustrative, not device measurements.</p>
 </header>
 
 <nav class="toc"><div class="inner">
   <a href="#ch1">Step 1 · Phase</a>
   <a href="#ch2">Step 2 · Fine or flipped</a>
-  <a href="#ch3">Step 3 · The check</a>
-  <a href="#ch4">Step 4 · Checking often</a>
-  <a href="#ch5">Step 5 · Timing</a>
-  <a href="#ch6">Step 6 · The decoder</a>
-  <a href="#ch7">Step 7 · The big picture</a>
+  <a href="#ch3">Step 3 · Stabilizer check</a>
+  <a href="#ch4">Step 4 · Check frequency</a>
+  <a href="#ch5">Step 5 · Gate timing</a>
+  <a href="#ch6">Step 6 · Decoder</a>
+  <a href="#ch7">Step 7 · Summary</a>
   <a href="lab.html" style="border-color:var(--accent);color:var(--accent)">Open the Lab →</a>
 </div></nav>
 
@@ -39,276 +36,218 @@
 <!-- ===================== STEP 1 ===================== -->
 <section class="chapter" id="ch1">
   <div class="kicker">Step 1</div>
-  <h2>Meet the qubit and its phase</h2>
-  <p class="lead">Let's start with a picture you'll use for the whole tour: the <b>Bloch sphere</b>. Every state of a qubit is an arrow pointing from the centre of this sphere to its surface.</p>
-  <p>At the top (north pole) sits |0⟩ and at the bottom sits |1⟩, just like the 0 and 1 of an ordinary bit. Around the middle, on the equator, are two special states we'll care about a lot: |+⟩, which we'll call <b>"fine"</b>, and directly opposite it |−⟩, which we'll call <b>"flipped"</b>. Our qubit starts at |+⟩.</p>
-  <p>Here's the surprising part: a real qubit never sits still. A transmon (a tiny superconducting circuit) has a natural frequency, so its arrow keeps spinning around the equator, like a hand on a clock. That spin is <b>not</b> a mistake. We know its speed exactly, so we can always predict where the arrow should be.</p>
-  <p>The trouble starts when the environment (stray magnetic fields, charges, defects in the chip) nudges that frequency by a tiny amount, called δω. Now the qubit spins slightly too fast or too slow, and slowly drifts away from where it should be. That drift angle is the <b>phase error θ</b>:</p>
-  <div class="math">θ = ∫ δω(t) dt &nbsp;·&nbsp; in words: the frequency mistake, added up over time</div>
-  <p>Physicists like to "ride along" with the correct spin, the way you'd stand on a merry-go-round to watch a friend on it. In that view, called the <b>rotating frame</b>, the correct arrow stands still and only the mistake moves. That's the view on the right below.</p>
+  <h2>Qubit phase and phase error</h2>
+  <p>A qubit state is drawn as an arrow on the <b>Bloch sphere</b>. |0⟩ and |1⟩ are the poles. |+⟩ and |−⟩ lie on the equator. We prepare the qubit in |+⟩ and call it <b>fine</b>; |−⟩ is <b>flipped</b>.</p>
+  <p>A transmon has a known frequency, so its arrow rotates steadily around the equator. This rotation is expected and is not an error. Environmental noise shifts the frequency by a small amount δω, so the qubit rotates slightly too fast or too slow. The resulting angle between where the qubit should be and where it is, is the <b>phase error θ</b>:</p>
+  <div class="math">θ = ∫ δω(t) dt</div>
+  <p>We describe the qubit in the <b>rotating frame</b>, which follows the expected rotation. In this frame the correct arrow is fixed and only the error moves.</p>
 
   <div class="demo">
     <div class="two">
-      <div><p class="note" style="text-align:center;margin:0">What's really happening: the qubit always spins</p><canvas id="ch1-lab" style="width:100%"></canvas></div>
-      <div><p class="note" style="text-align:center;margin:0">Riding along with the correct spin: only the mistake moves</p><canvas id="ch1-rot" style="width:100%"></canvas></div>
+      <div><p class="note" style="text-align:center;margin:0">Lab frame</p><canvas id="ch1-lab" style="width:100%"></canvas></div>
+      <div><p class="note" style="text-align:center;margin:0">Rotating frame</p><canvas id="ch1-rot" style="width:100%"></canvas></div>
     </div>
-    <div class="key"><span><i class="sw" style="background:var(--gray)"></i>Where the qubit should be</span><span><i class="sw" style="background:var(--coral)"></i>Where it really is</span><span class="note">Drag a sphere left or right to turn it.</span></div>
+    <div class="key"><span><i class="sw" style="background:var(--gray)"></i>Expected state</span><span><i class="sw" style="background:var(--coral)"></i>Actual state</span><span class="note">Drag a sphere to rotate the view.</span></div>
     <div class="stats">
       <div class="stat"><span>Phase error θ</span><b id="ch1-theta">0°</b></div>
-      <div class="stat"><span>Chance a check would say "flipped"</span><b id="ch1-p">0%</b></div>
-      <div class="stat"><span>Your last check said</span><b id="ch1-res">—</b></div>
+      <div class="stat"><span>P(check reads "flipped")</span><b id="ch1-p">0%</b></div>
+      <div class="stat"><span>Last check</span><b id="ch1-res">—</b></div>
     </div>
-    <div class="row"><label for="ch1-err">How much the noise speeds it up</label><input type="range" id="ch1-err" min="-40" max="40" step="1" value="12" style="flex:1"><span class="val" id="ch1-errv">12°/s</span></div>
-    <div class="row"><label><input type="checkbox" id="ch1-wob"> Make the noise wander randomly</label></div>
-    <div class="row"><button id="ch1-play">Pause</button><button id="ch1-check" class="primary">Run a check</button><button id="ch1-reset">Start over</button></div>
-    <p class="note">The animation is slowed down enormously so you can see it. A real qubit spins billions of times per second.</p>
+    <div class="row"><label for="ch1-err">Frequency error</label><input type="range" id="ch1-err" min="-40" max="40" step="1" value="12" style="flex:1"><span class="val" id="ch1-errv">12°/s</span></div>
+    <div class="row"><label><input type="checkbox" id="ch1-wob"> Fluctuating noise</label></div>
+    <div class="row"><button id="ch1-play">Pause</button><button id="ch1-check" class="primary">Run a check</button><button id="ch1-reset">Reset</button></div>
+    <p class="note">Slowed down for visibility.</p>
   </div>
-  <div class="try"><b>Try this</b>
-    <ul>
-      <li>Move the slider to 0. The orange arrow sits right on the grey one: a perfect, noise-free qubit.</li>
-      <li>Push it positive, then negative. The qubit pulls ahead, then falls behind. Either way, the gap θ is the mistake.</li>
-      <li>Tick "wander randomly". Real noise behaves like this: it drifts, speeds up, slows down.</li>
-      <li>Press "Run a check" a few times. Notice anything odd about θ afterwards? Steps 2 and 3 explain it.</li>
-    </ul>
-  </div>
-  <h3>How we describe the noise</h3>
-  <p>To study noise carefully we need a model we can control. We use the <b>Ornstein–Uhlenbeck (OU) process</b>: noise that wanders randomly but "remembers" its recent past. It has just two knobs. The <b>correlation time τc</b> says how long the noise remembers itself: a long τc means slow, drifting noise, a short τc means fast, jittery noise. The <b>strength V</b> says how big the wobbles are. In this research we keep V fixed and turn τc, so any change we see comes from the noise's memory alone.</p>
-  <div class="takeaway"><b>Remember:</b> noise changes how fast the qubit spins. Added up over time, that makes the arrow drift away from where it should be by an angle θ, the phase error.</div>
-  <a class="next" href="#ch2">Next, Step 2: why a drifted qubit is "fine" and "flipped" at the same time →</a>
+  <h3>Noise model</h3>
+  <p>We model δω as an <b>Ornstein–Uhlenbeck (OU) process</b>, random noise with a finite memory. It has two parameters: the <b>correlation time τc</b> (how long the noise stays correlated with itself) and the <b>variance V</b> (its strength). We hold V fixed and vary τc, so that changes in the results come from the noise memory alone.</p>
+  <div class="takeaway"><b>Key point:</b> a frequency error, accumulated over time, rotates the qubit away from its expected state by a phase error θ.</div>
 </section>
 
 <!-- ===================== STEP 2 ===================== -->
 <section class="chapter" id="ch2">
   <div class="kicker">Step 2</div>
-  <h2>A tilted qubit is part "fine" and part "flipped"</h2>
-  <p class="lead">This is the most important idea of the whole tour, so let's go slowly.</p>
-  <p>When the arrow has drifted by some angle θ, you might think it's in a new, third kind of state. It isn't. A tilted qubit is <i>exactly the same thing</i> as a mixture of the fine state |+⟩ and the flipped state |−⟩. It's one state, written two ways, a bit like saying a direction is "10° east of north" or "mostly north, a little east".</p>
-  <div class="math">tilted qubit = cos(θ/2) · |+⟩ − i · sin(θ/2) · |−⟩</div>
-  <p>The two numbers in front tell you how much of each piece is there. Square them and you get probabilities: if you check the qubit, it says "fine" with chance cos²(θ/2) and "flipped" with chance sin²(θ/2). Move the slider below and watch the two bars trade places.</p>
+  <h2>A phase error is a superposition of "fine" and "flipped"</h2>
+  <p>A qubit rotated by θ can be written exactly as a combination of |+⟩ and |−⟩:</p>
+  <div class="math">|ψ⟩ = cos(θ/2) |+⟩ − i sin(θ/2) |−⟩</div>
+  <p>A measurement in this basis returns "fine" with probability cos²(θ/2) and "flipped" with probability sin²(θ/2). A full rotation of θ = 180° is a certain flip, called a <b>Z error</b> (phase flip).</p>
   <div class="demo">
     <div class="two">
       <canvas id="ch2-globe" style="width:100%"></canvas>
       <div>
-        <div class="row"><label for="ch2-theta">Tilt θ</label><input type="range" id="ch2-theta" min="0" max="180" step="1" value="10" style="flex:1"><span class="val" id="ch2-thetav">10°</span></div>
+        <div class="row"><label for="ch2-theta">Rotation θ</label><input type="range" id="ch2-theta" min="0" max="180" step="1" value="10" style="flex:1"><span class="val" id="ch2-thetav">10°</span></div>
         <p id="ch2-eq" style="font-size:15px"></p>
         <p class="note" style="margin:8px 0 2px">Fine |+⟩ · <span id="ch2-fine"></span></p>
         <div style="background:var(--neutral);border-radius:6px;height:22px"><div id="ch2-bar-fine" style="background:var(--teal);height:22px;border-radius:6px"></div></div>
         <p class="note" style="margin:10px 0 2px">Flipped |−⟩ · <span id="ch2-flip"></span></p>
         <div style="background:var(--neutral);border-radius:6px;height:22px"><div id="ch2-bar-flip" style="background:var(--coral);height:22px;border-radius:6px"></div></div>
-        <div class="row" style="margin-top:14px"><button id="ch2-run" class="primary">Check 1,000 qubits tilted like this</button></div>
+        <div class="row" style="margin-top:14px"><button id="ch2-run" class="primary">Measure 1,000 copies</button></div>
         <p id="ch2-counts" class="note"></p>
       </div>
     </div>
   </div>
-  <div class="try"><b>Try this</b>
-    <ul>
-      <li>Set θ to 10° and check 1,000 qubits. Only about 8 come back "flipped". Small tilts rarely cause trouble.</li>
-      <li>Set θ to 90°. Now it's a coin toss.</li>
-      <li>Set θ to 180°. Every single one is flipped. That full flip has a name: a <b>Z error</b>, or <b>phase flip</b>.</li>
-    </ul>
-  </div>
   <table class="simple">
-    <tr><th>Tilt θ</th><th>Chance a check says "flipped"</th></tr>
-    <tr><td>10°</td><td>0.76%</td></tr><tr><td>30°</td><td>6.7%</td></tr><tr><td>90°</td><td>50%</td></tr><tr><td>180°</td><td>100%, a full Z error</td></tr>
+    <tr><th>θ</th><th>P(flipped)</th></tr>
+    <tr><td>10°</td><td>0.76%</td></tr><tr><td>30°</td><td>6.7%</td></tr><tr><td>90°</td><td>50%</td></tr><tr><td>180°</td><td>100%</td></tr>
   </table>
-  <div class="takeaway"><b>Remember:</b> a tilt isn't a new kind of state. It's mostly "fine" with a little "flipped" mixed in, and the angle decides how much. The chance of a flip grows roughly with the square of the angle.</div>
-  <a class="next" href="#ch3">Next, Step 3: how a check turns that mixture into a clear answer →</a>
+  <div class="takeaway"><b>Key point:</b> small phase errors rarely cause a flip; the flip probability grows approximately as θ².</div>
 </section>
 
 <!-- ===================== STEP 3 ===================== -->
 <section class="chapter" id="ch3">
   <div class="kicker">Step 3</div>
-  <h2>The check, one move at a time</h2>
-  <p class="lead">We can't simply look at our qubit, because looking destroys the information stored in it. Instead we use a helper qubit, called the <b>ancilla</b>, as a go-between. One full check is called a <b>round</b>.</p>
-  <p>Here is what happens in one round, in plain words:</p>
+  <h2>One stabilizer round</h2>
+  <p>The data qubit is not measured directly. An <b>ancilla</b> qubit performs the check. One check is a <b>round</b>:</p>
   <ol>
-    <li><b>Get the helper ready.</b> Reset the ancilla to |0⟩, then a Hadamard gate turns it into |+⟩.</li>
-    <li><b>Connect the two with a CNOT gate.</b> This is the clever bit. The CNOT works like a label maker: the "fine" part of our qubit puts the label 0 on the ancilla, and the "flipped" part puts the label 1.</li>
-    <li><b>Read the label.</b> A Hadamard and a measurement read the ancilla. A measurement always gives one clear answer, 0 or 1, never "mostly 0".</li>
-    <li><b>The tilt disappears.</b> Whichever label came up, the part of the qubit with the other label is gone. Our qubit is now <i>exactly</i> fine or <i>exactly</i> flipped. Nothing rotated it back; the tilt simply decided the odds and then vanished.</li>
+    <li>Reset the ancilla to |0⟩ and apply a Hadamard, giving |+⟩.</li>
+    <li>Apply a CNOT between ancilla and data qubit. Through phase kickback, the "fine" component of the data leaves the ancilla in |+⟩ and the "flipped" component leaves it in |−⟩.</li>
+    <li>Apply a Hadamard and measure the ancilla, giving 0 or 1.</li>
+    <li>The measurement projects the data qubit onto exactly |+⟩ or |−⟩. The phase error is removed; it only set the probability of each outcome.</li>
   </ol>
-  <p>The answer of each round is called the <b>syndrome</b> (0 = fine, 1 = flipped). What we really watch, though, is when that answer <i>changes</i> from one round to the next. That's called a <b>detection event</b>, and it's the only thing the error-correcting software ever gets to see.</p>
+  <p>The measured value is the <b>syndrome</b> s. A <b>detection event</b> is a change in the syndrome between consecutive rounds, d<sub>r</sub> = s<sub>r</sub> ⊕ s<sub>r−1</sub>. Detection events are the only information the decoder receives.</p>
   <div class="demo">
     <div class="caption" id="ch3-cap"></div>
     <svg id="ch3-sv" viewBox="0 0 680 410"></svg>
-    <div class="row"><button id="ch3-next" class="primary">Next move</button><button id="ch3-auto">Play automatically</button><button id="ch3-reset">Start over</button></div>
+    <div class="row"><button id="ch3-next" class="primary">Next</button><button id="ch3-auto">Auto-play</button><button id="ch3-reset">Reset</button></div>
     <div class="row"><label for="ch3-scale">Noise strength</label><input type="range" id="ch3-scale" min="0.5" max="2" step="0.1" value="1" style="flex:1"><span class="val" id="ch3-scalev">1.0×</span></div>
-    <div class="row"><label for="ch3-n">How many shots to run</label><input type="number" id="ch3-n" min="10" max="100000" step="1" value="2000"><button id="ch3-shots">Run shots</button><span class="err" id="ch3-err"></span></div>
+    <div class="row"><label for="ch3-n">Number of shots</label><input type="number" id="ch3-n" min="10" max="100000" step="1" value="2000"><button id="ch3-shots">Run shots</button><span class="err" id="ch3-err"></span></div>
   </div>
-  <h3>One shot can't tell you much. Many shots can.</h3>
-  <p>A <b>shot</b> is one complete run of the experiment, here 8 rounds long. In one shot, each round only gives a yes or a no, so you can't tell whether the qubit drifted by 10° or by 60°. But if you repeat the same experiment many times and count how often each round fires, that fraction f is an estimate of sin²(θ/2). Undo the formula, θ = 2·arcsin√f, and you've recovered how much phase built up in that round. Choose your own number of shots above and see how close the blue row gets to the hidden grey row.</p>
-  <div class="try"><b>Try this</b>
-    <ul>
-      <li>Run just 50 shots, then 20,000. With few shots the recovered angles jump around; with many they settle on the truth.</li>
-      <li>Notice what you can't recover: whether the qubit spun too fast or too slow. The sign is lost.</li>
-    </ul>
-  </div>
-  <div class="takeaway"><b>Remember:</b> the CNOT labels the "fine" and "flipped" parts, reading the label keeps one and erases the tilt, and detection events record when the answer changed. Many shots together let you work back to the hidden phase.</div>
-  <a class="next" href="#ch4">Next, Step 4: what happens when we check over and over →</a>
+  <h3>Recovering the phase from many shots</h3>
+  <p>A <b>shot</b> is one full run of the experiment (8 rounds here). A single shot gives only one bit per round. Over many shots, the fraction f of shots that fire in round r estimates sin²(θ/2), so the phase accumulated in that round is θ = 2·arcsin√f. The sign of θ cannot be recovered, and the estimate becomes unreliable as f approaches 0.5.</p>
+  <div class="takeaway"><b>Key point:</b> the stabilizer measurement converts a continuous phase error into a discrete outcome. Statistics over many shots recover the phase per round.</div>
 </section>
 
 <!-- ===================== STEP 4 ===================== -->
 <section class="chapter" id="ch4">
   <div class="kicker">Step 4</div>
-  <h2>Checking often: why phase doesn't pile up</h2>
-  <p class="lead">Many people expect continuous noise to keep pushing the qubit further and further away. It does keep acting, but every check wipes the tilt back to zero.</p>
-  <p>So the qubit only ever carries the phase it picked up since its last check. And because the chance of a flip grows with the <i>square</i> of the tilt, chopping the same total phase into many small, separately checked pieces makes flips much rarer. This has a lovely name: the <b>quantum Zeno effect</b>, after the ancient puzzle about the arrow that never arrives.</p>
+  <h2>Measurement frequency and detection latency</h2>
+  <p>Each measurement resets the phase error to zero, so the qubit only carries the phase accumulated since its last check. Since the flip probability scales as θ², dividing the same total phase over more checks reduces the overall flip probability. This is the <b>quantum Zeno effect</b>.</p>
   <div class="demo">
-    <div class="row"><label for="ch4-total">Total phase the noise adds</label><input type="range" id="ch4-total" min="0.2" max="3" step="0.1" value="1.2" style="flex:1"><span class="val" id="ch4-totalv"></span></div>
-    <div class="row"><label for="ch4-n">Number of checks it's split into</label><input type="range" id="ch4-n" min="1" max="20" step="1" value="1" style="flex:1"><span class="val" id="ch4-nv"></span></div>
+    <div class="row"><label for="ch4-total">Total phase</label><input type="range" id="ch4-total" min="0.2" max="3" step="0.1" value="1.2" style="flex:1"><span class="val" id="ch4-totalv"></span></div>
+    <div class="row"><label for="ch4-n">Number of checks</label><input type="range" id="ch4-n" min="1" max="20" step="1" value="1" style="flex:1"><span class="val" id="ch4-nv"></span></div>
     <div class="stats">
-      <div class="stat"><span>Phase between two checks</span><b id="ch4-per"></b></div>
-      <div class="stat"><span>Flip chance at each check</span><b id="ch4-pper"></b></div>
-      <div class="stat"><span>Chance it ends up flipped</span><b id="ch4-end"></b></div>
+      <div class="stat"><span>Phase per check</span><b id="ch4-per"></b></div>
+      <div class="stat"><span>P(flip) per check</span><b id="ch4-pper"></b></div>
+      <div class="stat"><span>P(flipped at the end)</span><b id="ch4-end"></b></div>
     </div>
     <canvas id="ch4-zeno" style="width:100%"></canvas>
   </div>
-  <h3>So how long until the check notices?</h3>
-  <p>This is the central question of the research: the <b>detection latency</b>, the time between the moment noise appears (here at 0.3 µs) and the moment the first detection event arrives. The chart below works it out for every cycle time T, using the real formulas for OU noise. The grey dashed line is a sudden, clean flip for comparison: that's always caught after half a cycle on average.</p>
+  <h3>Detection latency</h3>
+  <p>The <b>detection latency</b> is the time from noise onset (0.3 µs here) to the first detection event. The chart gives the mean latency versus cycle time T for OU noise, using P(first detection in round k) = p<sub>k</sub> ∏<sub>j&lt;k</sub>(1 − p<sub>j</sub>). The dashed line is a sudden flip, detected after T/2 on average.</p>
   <div class="demo">
-    <div class="row"><label for="ch4-tc">Noise memory τc</label><input type="range" id="ch4-tc" min="0.05" max="5" step="0.05" value="1" style="flex:1"><span class="val" id="ch4-tcv"></span></div>
+    <div class="row"><label for="ch4-tc">Correlation time τc</label><input type="range" id="ch4-tc" min="0.05" max="5" step="0.05" value="1" style="flex:1"><span class="val" id="ch4-tcv"></span></div>
     <div class="row"><label for="ch4-sig">Noise strength √V</label><input type="range" id="ch4-sig" min="0.3" max="3" step="0.1" value="1" style="flex:1"><span class="val" id="ch4-sigv"></span></div>
     <canvas id="ch4-lat" style="width:100%"></canvas>
-    <div class="key"><span><i class="sw" style="background:var(--coral)"></i>OU phase noise: average latency</span><span><i class="sw" style="background:var(--gray)"></i>A sudden, clean flip</span></div>
+    <div class="key"><span><i class="sw" style="background:var(--coral)"></i>OU noise, mean latency</span><span><i class="sw" style="background:var(--gray)"></i>Sudden flip</span></div>
     <div class="stats">
-      <div class="stat"><span>Fastest detection when checking every</span><b id="ch4-best"></b></div>
-      <div class="stat" style="grid-column:span 2"><span>What kind of noise this is</span><b id="ch4-regime" style="font-size:15px"></b></div>
+      <div class="stat"><span>Fastest detection at T =</span><b id="ch4-best"></b></div>
+      <div class="stat" style="grid-column:span 2"><span>Regime</span><b id="ch4-regime" style="font-size:15px"></b></div>
     </div>
   </div>
-  <div class="try"><b>Try this</b>
-    <ul>
-      <li>Set τc to 5 µs (slow noise). Checking very often makes detection <i>slower</i>. That's Zeno at work.</li>
-      <li>Set τc to 0.05 µs (fast noise). The curve goes almost flat: checking more or less often barely matters.</li>
-      <li>The place where the curve changes shape is where the noise's memory shows up in the data. Finding that is a big part of the research.</li>
-    </ul>
-  </div>
-  <div class="takeaway"><b>Remember:</b> how quickly a check notices noise depends on the noise <i>and</i> on how often you check. Comparing the cycle time T with the noise memory τc is exactly what this research measures.</div>
-  <a class="next" href="#ch5">Next, Step 5: what timing looks like inside a real check →</a>
+  <p>For slow noise (τc ≫ T), more frequent checks delay detection. For fast noise (τc ≪ T), latency depends only weakly on T. The transition between these regimes shows where the noise memory becomes visible in the syndrome data.</p>
+  <div class="takeaway"><b>Key point:</b> detection latency depends on both the noise and the cycle time; the relevant comparison is T versus τc.</div>
 </section>
 
 <!-- ===================== STEP 5 ===================== -->
 <section class="chapter" id="ch5">
   <div class="kicker">Step 5</div>
-  <h2>Four qubits, one helper, and a strict timetable</h2>
-  <p class="lead">In a real surface code, each helper qubit checks four data qubits at once. It talks to them one after another, on a fixed clock, every single round.</p>
-  <p>Here's the timetable we'll use. The numbers are made-up but realistic:</p>
+  <h2>Weight-4 stabilizer and gate timing</h2>
+  <p>In the surface code, each stabilizer measures the joint parity of four data qubits. The ancilla performs four CNOTs in a fixed order every round. Illustrative timing:</p>
   <table class="simple">
-    <tr><th>Time in each 1,000 ns round</th><th>What the helper is doing</th></tr>
-    <tr><td>0–100 ns</td><td>Resetting</td></tr><tr><td>100–120 ns</td><td>Hadamard gate</td></tr>
-    <tr><td>120–360 ns</td><td>CNOT with Q1, then Q2, then Q3, then Q4 (60 ns each)</td></tr><tr><td>360–380 ns</td><td>Hadamard gate</td></tr>
-    <tr><td>380–680 ns</td><td>Being read out</td></tr><tr><td>780 ns</td><td>The answer reaches the electronics</td></tr>
+    <tr><th>Time in each 1,000 ns round</th><th>Operation</th></tr>
+    <tr><td>0–100 ns</td><td>Ancilla reset</td></tr><tr><td>100–120 ns</td><td>Hadamard</td></tr>
+    <tr><td>120–360 ns</td><td>CNOT with Q1, Q2, Q3, Q4 (60 ns each)</td></tr><tr><td>360–380 ns</td><td>Hadamard</td></tr>
+    <tr><td>380–680 ns</td><td>Readout</td></tr><tr><td>780 ns</td><td>Result available</td></tr>
   </table>
-  <p>Here's the catch: the helper only "looks at" each qubit during that qubit's own CNOT. If noise hits a qubit just <i>after</i> its CNOT, this round has already looked away, and the problem only shows up next round. Choose a qubit and a time below, press Play, and watch it happen.</p>
+  <p>The stabilizer samples each data qubit at the end of that qubit's CNOT. An error arriving after this point is detected in the next round.</p>
   <div class="demo">
     <svg id="ch5-sv" viewBox="0 0 680 540"></svg>
     <div class="caption" id="ch5-ans" style="margin-top:8px"></div>
-    <p class="note" style="margin:6px 0">If a clean flip hit each qubit at this same moment, the helper would first notice it in:</p>
+    <p class="note" style="margin:6px 0">First detection round for a sudden flip at this time, by qubit:</p>
     <div class="cards4" id="ch5-pred"></div>
-    <div class="row"><button id="ch5-play" class="primary">Play</button><button id="ch5-reset">Start over</button><label for="ch5-speed">Speed</label><input type="range" id="ch5-speed" min="50" max="1000" step="50" value="200" style="width:130px"><span class="val" id="ch5-speedv">200 ns/s</span></div>
-    <div class="row"><label for="ch5-q">Noise hits</label><select id="ch5-q"><option value="0">Q1</option><option value="1">Q2</option><option value="2">Q3</option><option value="3">Q4</option></select>
+    <div class="row"><button id="ch5-play" class="primary">Play</button><button id="ch5-reset">Reset</button><label for="ch5-speed">Speed</label><input type="range" id="ch5-speed" min="50" max="1000" step="50" value="200" style="width:130px"><span class="val" id="ch5-speedv">200 ns/s</span></div>
+    <div class="row"><label for="ch5-q">Noise on</label><select id="ch5-q"><option value="0">Q1</option><option value="1">Q2</option><option value="2">Q3</option><option value="3">Q4</option></select>
       <label for="ch5-t">at</label><input type="range" id="ch5-t" min="0" max="3000" step="10" value="200" style="flex:1"><span class="val" id="ch5-tv">200 ns</span></div>
-    <div class="row"><label for="ch5-mode">Kind of noise</label><select id="ch5-mode"><option value="clean">A sudden, full flip</option><option value="grad">A gradual drift (spins too fast)</option></select>
-      <label for="ch5-rate">Drift speed</label><input type="range" id="ch5-rate" min="10" max="180" step="5" value="60" style="width:130px"><span class="val" id="ch5-ratev">60°/µs</span></div>
-    <p class="note">A small simplification: in a real surface code the four qubits share one entangled state. Treating them separately still gets the timing right, which is what this step is about.</p>
+    <div class="row"><label for="ch5-mode">Noise type</label><select id="ch5-mode"><option value="clean">Sudden flip</option><option value="grad">Gradual phase error</option></select>
+      <label for="ch5-rate">Rate</label><input type="range" id="ch5-rate" min="10" max="180" step="5" value="60" style="width:130px"><span class="val" id="ch5-ratev">60°/µs</span></div>
+    <p class="note">The four data qubits are treated independently. This gives the correct detection timing; in a real surface code they share an entangled state.</p>
   </div>
-  <div class="try"><b>Try this</b>
-    <ul>
-      <li>Leave the defaults: Q1 is hit at 200 ns, just after its CNOT finished at 180 ns. It's caught in round 2. The cards show that the same hit on Q2, Q3 or Q4 would be caught in round 1.</li>
-      <li>Move the hit to 170 ns. Now Q1 is caught in round 1. Ten nanoseconds made a whole round of difference!</li>
-      <li>Switch to a gradual drift and press Start over a few times. The round changes from run to run, because each check only flips the qubit with some chance.</li>
-    </ul>
-  </div>
-  <p>This is called the <b>gate-scheduling effect</b>, and it matters a lot for this research. Two errors that happen at the very same moment can show up in different rounds, which can trick a decoder into thinking the noise travelled from one qubit to another when it didn't.</p>
-  <p>Want to set the noise start, duration, decay, spreading, gate times, readout and reset yourself? That's exactly what the <a href="lab.html" style="color:var(--accent)">Simulation Lab</a> is for.</p>
-  <div class="takeaway"><b>Remember:</b> waiting to be noticed = waiting for the next CNOT + waiting for the readout. Which round an error shows up in depends on when it hits, which qubit it hits, and how strong it is.</div>
-  <a class="next" href="#ch6">Next, Step 6: how the decoder fixes things →</a>
+  <p>With the default settings, Q1 is hit at 200 ns, after its CNOT ends at 180 ns, and is detected in round 2. The same error on Q2–Q4 is detected in round 1. This <b>gate-scheduling effect</b> can make simultaneous errors appear in different rounds, which a decoder may misread as noise propagating between qubits.</p>
+  <div class="takeaway"><b>Key point:</b> latency = wait until the qubit's next CNOT + readout time. The detection round depends on the error time, the qubit's position in the CNOT order, and the noise strength.</div>
 </section>
 
 <!-- ===================== STEP 6 ===================== -->
 <section class="chapter" id="ch6">
   <div class="kicker">Step 6</div>
-  <h2>The decoder: playing detective</h2>
-  <p class="lead">Now let's zoom out to a small but complete error-correcting code: the distance-3 surface code. It protects one precious qubit by spreading it across nine data qubits, Q1 to Q9.</p>
-  <p>The purple patches are the checks that catch phase flips. When some of them fire, the decoder has to play detective: <i>which qubits most likely flipped?</i> It only sees which checks fired, never the errors themselves.</p>
-  <p>The standard detective is called <b>minimum-weight perfect matching (MWPM)</b>. Its idea is simple and sensible: errors are rare, so the best guess is the explanation that needs the <b>fewest</b> errors. Every data qubit is a link between the checks it touches. Each fired check has to be paired with another fired check, or with an edge of the code, and MWPM picks the pairing that crosses the fewest links. The fix is usually just written down in software (the <b>Pauli frame</b>) and applied when the qubits are finally read.</p>
+  <h2>Decoding with minimum-weight perfect matching</h2>
+  <p>The distance-3 surface code encodes one logical qubit in nine data qubits (Q1–Q9). The purple X-type stabilizers detect Z errors. The decoder sees only which stabilizers fired and must infer which qubits flipped.</p>
+  <p>In <b>minimum-weight perfect matching (MWPM)</b>, each data qubit is an edge between the stabilizers it belongs to (or between a stabilizer and the code boundary). Fired stabilizers are paired with each other or with a boundary so that the total number of edges is minimal, which is the most likely explanation when errors are rare. The correction is tracked in software (the <b>Pauli frame</b>).</p>
   <div class="demo">
-    <div class="row" style="margin-top:0"><button id="ch6-m-explore">Explore</button><button id="ch6-m-game">You be the decoder</button><button id="ch6-m-stats">Run many trials</button></div>
+    <div class="row" style="margin-top:0"><button id="ch6-m-explore">Explore</button><button id="ch6-m-game">Decode manually</button><button id="ch6-m-stats">Statistics</button></div>
     <div id="ch6-board">
       <div class="caption" id="ch6-cap"></div>
       <div class="two"><svg id="ch6-sv" viewBox="0 0 400 370"></svg><div id="ch6-pan" style="font-size:14px"></div></div>
-      <div class="key"><span><i class="sw" style="background:var(--purple-bg);border:1px solid var(--purple)"></i>A check that catches phase flips</span><span><i class="sw" style="background:var(--coral)"></i>A flip, or a check that fired</span><span><i class="sw" style="background:var(--accent)"></i>The correction</span><span><i class="sw" style="background:var(--teal-bg);border:1px solid var(--teal)"></i>A check you've explained</span></div>
+      <div class="key"><span><i class="sw" style="background:var(--purple-bg);border:1px solid var(--purple)"></i>X stabilizer</span><span><i class="sw" style="background:var(--coral)"></i>Z error / fired stabilizer</span><span><i class="sw" style="background:var(--accent)"></i>Correction</span><span><i class="sw" style="background:var(--teal-bg);border:1px solid var(--teal)"></i>Resolved stabilizer</span></div>
     </div>
-    <div class="row" id="ch6-c-explore"><button id="ch6-ex1">Show 1 error</button><button id="ch6-ex2">Show 2 errors (it fails)</button><button id="ch6-rand">Random errors</button><button id="ch6-clear">Clear</button></div>
-    <div class="row" id="ch6-c-game"><button id="ch6-new">New puzzle</button><button id="ch6-submit" class="primary">Check my answer</button><button id="ch6-showdec">Show the decoder's answer</button></div>
-    <div class="row" id="ch6-c-stats"><label for="ch6-p">Chance each qubit flips</label><input type="range" id="ch6-p" min="0.01" max="0.3" step="0.01" value="0.02" style="flex:1"><span class="val" id="ch6-pv">2%</span>
-      <label for="ch6-n">Trials</label><input type="number" id="ch6-n" min="100" max="200000" step="1" value="20000"><button id="ch6-run" class="primary">Run trials</button><span class="err" id="ch6-err"></span></div>
-    <div id="ch6-stat"><p class="note">Choose how many trials to run, then press "Run trials".</p></div>
+    <div class="row" id="ch6-c-explore"><button id="ch6-ex1">1 error</button><button id="ch6-ex2">2 errors</button><button id="ch6-rand">Random</button><button id="ch6-clear">Clear</button></div>
+    <div class="row" id="ch6-c-game"><button id="ch6-new">New puzzle</button><button id="ch6-submit" class="primary">Submit</button><button id="ch6-showdec">Show MWPM</button></div>
+    <div class="row" id="ch6-c-stats"><label for="ch6-p">Physical error rate p</label><input type="range" id="ch6-p" min="0.01" max="0.3" step="0.01" value="0.02" style="flex:1"><span class="val" id="ch6-pv">2%</span>
+      <label for="ch6-n">Trials</label><input type="number" id="ch6-n" min="100" max="200000" step="1" value="20000"><button id="ch6-run" class="primary">Run</button><span class="err" id="ch6-err"></span></div>
+    <div id="ch6-stat"><p class="note">Set the number of trials and press Run.</p></div>
   </div>
-  <div class="try"><b>Try this</b>
-    <ul>
-      <li><b>Explore:</b> click qubits to add flips and watch the checks react. Hover a qubit to see which checks it touches. Click each explanation on the right to see where it leads.</li>
-      <li>Press "Show 2 errors". MWPM picks the cheaper one-flip explanation, and together with the real errors it forms a line of flips from edge to edge: a <b>logical error</b>. A distance-3 code can only promise to fix one error.</li>
-      <li><b>You be the decoder:</b> the flips are hidden. Click qubits until no check is firing, then see whether you beat MWPM.</li>
-      <li><b>Run many trials:</b> type any number of trials. At small error rates the protected qubit fails less often than a single unprotected one. That's the whole point of error correction.</li>
-    </ul>
-  </div>
-  <p><b>What real decoders do.</b> On real hardware the checks repeat round after round, so the decoder matches in <b>space and time</b>: detection events from different rounds are clues too, and links also join rounds (for measurement mistakes and for errors delayed by the timetable from Step 5). Standard MWPM treats every link as equally likely, assuming errors are independent. Teaching it about timing and noise memory is where this research comes in.</p>
-  <div class="takeaway"><b>Remember:</b> the decoder only sees which checks fired, chooses the explanation with the fewest errors, and keeps the fix in software. It fails when the real errors happen to be less likely than some other explanation.</div>
-  <a class="next" href="#ch7">Next, Step 7: putting it all together →</a>
+  <p>Explore: click qubits to place errors and select a pairing to see its result. With two errors, MWPM chooses the lower-weight explanation, and the combined error and correction form a chain across the code: a <b>logical error</b>. Distance 3 guarantees correction of one error only. Statistics: compares the logical error rate with the physical error rate p.</p>
+  <p>This demo uses a single, perfect measurement round. In practice, decoding is done over space and time: detection events from all rounds are matched, with additional edges for measurement errors and scheduling delays. Standard MWPM assumes independent errors; incorporating noise correlations into the edge weights is the goal of this research.</p>
+  <div class="takeaway"><b>Key point:</b> MWPM selects the minimum-weight explanation of the detection events. It fails when the actual error is less likely than another explanation.</div>
 </section>
 
 <!-- ===================== STEP 7 ===================== -->
 <section class="chapter" id="ch7">
   <div class="kicker">Step 7</div>
-  <h2>The big picture: how much of the noise's memory reaches the decoder?</h2>
-  <p class="lead">You've now seen every link in the chain. The research question is about what survives along that chain, and whether a decoder can use it.</p>
+  <h2>Summary and research question</h2>
+  <p>The steps above form one chain. The research question is how much of the noise memory survives each link, and whether a decoder can use it.</p>
   <div class="demo">
-    <svg viewBox="0 0 760 150" role="img" aria-label="Chain from OU noise to logical error rate">
+    <svg viewBox="0 0 760 150" role="img" aria-label="Chain from noise to decoder">
       <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--border-strong)"/></marker></defs>
       <g font-size="13" text-anchor="middle">
-        <rect x="10" y="40" width="110" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="65" y="68" fill="var(--text)" font-weight="600">Noise</text><text x="65" y="88" fill="var(--text2)" font-size="11.5">δω(t), τc, V</text>
-        <rect x="135" y="40" width="110" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="190" y="68" fill="var(--text)" font-weight="600">Physics</text><text x="190" y="88" fill="var(--text2)" font-size="11.5">ħδω Z / 2</text>
-        <rect x="260" y="40" width="110" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="315" y="68" fill="var(--text)" font-weight="600">Qubit tilt</text><text x="315" y="88" fill="var(--text2)" font-size="11.5">θ = ∫δω dt</text>
-        <rect x="385" y="40" width="110" height="70" rx="8" fill="var(--accent-bg)" stroke="var(--accent)" stroke-width="2"/><text x="440" y="68" fill="var(--text)" font-weight="600">Flips</text><text x="440" y="88" fill="var(--text2)" font-size="11.5">chance sin²(θ/2)</text>
-        <rect x="510" y="40" width="110" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="565" y="68" fill="var(--text)" font-weight="600">Detections</text><text x="565" y="88" fill="var(--text2)" font-size="11.5">which check, when</text>
-        <rect x="635" y="40" width="115" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="692" y="68" fill="var(--text)" font-weight="600">Decoder</text><text x="692" y="88" fill="var(--text2)" font-size="11.5">fix or fail</text>
+        <rect x="10" y="40" width="110" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="65" y="68" fill="var(--text)" font-weight="600">OU noise</text><text x="65" y="88" fill="var(--text2)" font-size="11.5">δω(t), τc, V</text>
+        <rect x="135" y="40" width="110" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="190" y="68" fill="var(--text)" font-weight="600">Hamiltonian</text><text x="190" y="88" fill="var(--text2)" font-size="11.5">ħδω Z / 2</text>
+        <rect x="260" y="40" width="110" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="315" y="68" fill="var(--text)" font-weight="600">Phase error</text><text x="315" y="88" fill="var(--text2)" font-size="11.5">θ = ∫δω dt</text>
+        <rect x="385" y="40" width="110" height="70" rx="8" fill="var(--accent-bg)" stroke="var(--accent)" stroke-width="2"/><text x="440" y="68" fill="var(--text)" font-weight="600">Z errors</text><text x="440" y="88" fill="var(--text2)" font-size="11.5">P = sin²(θ/2)</text>
+        <rect x="510" y="40" width="110" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="565" y="68" fill="var(--text)" font-weight="600">Syndromes</text><text x="565" y="88" fill="var(--text2)" font-size="11.5">detection events</text>
+        <rect x="635" y="40" width="115" height="70" rx="8" fill="none" stroke="var(--border-strong)"/><text x="692" y="68" fill="var(--text)" font-weight="600">Decoder</text><text x="692" y="88" fill="var(--text2)" font-size="11.5">logical error rate</text>
       </g>
       <g stroke="var(--border-strong)" stroke-width="1.25" marker-end="url(#ar)"><line x1="120" y1="75" x2="133" y2="75"/><line x1="245" y1="75" x2="258" y2="75"/><line x1="370" y1="75" x2="383" y2="75"/><line x1="495" y1="75" x2="508" y2="75"/><line x1="620" y1="75" x2="633" y2="75"/></g>
-      <text x="380" y="135" text-anchor="middle" font-size="12" fill="var(--text2)">At each arrow, some of the noise's memory survives and some is lost</text>
+      <text x="380" y="135" text-anchor="middle" font-size="12" fill="var(--text2)">τ_environment → τ_qubit → τ_syndrome</text>
     </svg>
   </div>
-  <h3>Three kinds of memory</h3>
-  <p>It helps to keep three "memories" apart, because they don't have to be the same:</p>
+  <h3>Three memory time scales</h3>
   <table class="simple">
-    <tr><th>Name</th><th>In plain words</th><th>Where you met it</th></tr>
-    <tr><td>Noise memory (τc)</td><td>How long the noise remembers itself</td><td>Step 1</td></tr>
-    <tr><td>Qubit memory</td><td>How long that memory stays in the qubit's phase</td><td>Steps 1 and 2</td></tr>
-    <tr><td>Syndrome memory</td><td>How much memory is left in the detection record, after the checks keep wiping the tilt</td><td>Steps 3 to 5</td></tr>
+    <tr><th>Time scale</th><th>Meaning</th></tr>
+    <tr><td>τ_environment (τc)</td><td>Correlation time of the noise</td></tr>
+    <tr><td>τ_qubit</td><td>How long the noise history remains in the qubit phase</td></tr>
+    <tr><td>τ_syndrome</td><td>Correlation time remaining in the detection events after repeated measurement</td></tr>
   </table>
-  <p>The decoder never sees the noise itself, only the detection record. So what really matters for the decoder is the syndrome memory, not the raw τc. Measuring how one turns into the other comes first.</p>
-  <h3>The experiment, one ingredient at a time</h3>
-  <p>To keep things understandable, we add one ingredient at a time. If something surprising happens, we know exactly which ingredient caused it.</p>
+  <p>The decoder only has access to τ_syndrome, so the first task is to measure how τc maps to τ_syndrome.</p>
+  <h3>Experiment plan</h3>
   <table class="simple">
-    <tr><th>Stage</th><th>What we set up</th><th>What it teaches us</th></tr>
-    <tr><td>P0</td><td>A qubit with no noise at all</td><td>A control: nothing should ever fire</td></tr>
-    <tr><td>P1</td><td>One clean flip at a chosen time</td><td>The delay caused only by the timetable (Step 5)</td></tr>
-    <tr><td>P2</td><td>A steady frequency mistake</td><td>Adds the wait for the tilt to build up (Step 2)</td></tr>
-    <tr><td>P3</td><td>Wandering OU noise</td><td>How noise memory changes the delay (Step 4)</td></tr>
-    <tr><td>P4</td><td>Sweep the cycle time and τc</td><td>Where the behaviour changes</td></tr>
-    <tr><td>P5</td><td>Work backwards from many shots</td><td>How much phase built up in each round (Step 3)</td></tr>
-    <tr><td>Then</td><td>The full distance-3 code with MWPM</td><td>How often the protected qubit fails, for different τc (Step 6)</td></tr>
-    <tr><td>Finally</td><td>A decoder that knows about timing and memory</td><td>Does teaching the decoder about the noise make it fail less often?</td></tr>
+    <tr><th>Stage</th><th>Setup</th><th>Purpose</th></tr>
+    <tr><td>P0</td><td>No noise</td><td>Control: no detection events</td></tr>
+    <tr><td>P1</td><td>Single Z error at a set time</td><td>Latency from the gate schedule only</td></tr>
+    <tr><td>P2</td><td>Constant frequency offset</td><td>Adds phase build-up time</td></tr>
+    <tr><td>P3</td><td>OU noise</td><td>Effect of noise memory on latency</td></tr>
+    <tr><td>P4</td><td>Sweep T and τc</td><td>Identify the regime change</td></tr>
+    <tr><td>P5</td><td>Inference from many shots</td><td>Recover phase per round</td></tr>
+    <tr><td>P6</td><td>Distance-3 code with MWPM</td><td>Logical error rate versus τc</td></tr>
+    <tr><td>P7</td><td>Correlation-aware decoder</td><td>Test whether noise-informed weights reduce the logical error rate</td></tr>
   </table>
-  <h3>Things that can fool us</h3>
-  <p>A late detection doesn't always mean the noise arrived late. The timetable (Step 5), faulty measurements, slow build-up of phase (Step 4), one error lighting up two checks, and two errors cancelling each other can all make the record look like noise is spreading when it isn't. That's why the simulator always keeps the hidden truth (when the noise started, how much phase built up, which qubits really flipped) separate from what a decoder sees, so every guess can be checked against the real answer.</p>
-  <div class="takeaway"><b>The research in one sentence:</b> how much of the noise's memory survives through the qubit and the checks into the detection record, and can a decoder use it to fix errors better?</div>
-  <p style="margin-top:18px">Ready to experiment on your own? Open the <a href="lab.html" style="color:var(--accent)">Simulation Lab</a> and set every parameter yourself.</p>
+  <h3>Confounding effects</h3>
+  <p>Gate scheduling, measurement errors, gradual phase build-up, one error triggering two stabilizers, and error cancellation can all produce apparent correlations in the detection record. The simulation therefore stores the true noise history separately from the decoder-visible data, so every inference can be checked against ground truth.</p>
+  <div class="takeaway"><b>Research question:</b> how much of the noise memory survives through the qubit and the stabilizer circuit into the syndrome record, and can a decoder use it to reduce logical errors?</div>
 </section>
 
 </main>
 
 <footer>
-  Simulation 1 · A guided tour for the MSQT research on noise with memory and surface-code detection. Timings and noise values are illustrative settings, not measurements from a real device.
+  Simulation 1 · MSQT research on finite-memory noise and surface-code syndromes. Parameter values are illustrative. <a href="lab.html" style="color:var(--accent)">Simulation Lab</a>
 </footer>
 
 <script src="js/common.js"></script>

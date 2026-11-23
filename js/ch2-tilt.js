@@ -17,8 +17,8 @@
     $('ch2-flip').textContent = (100 * s * s).toFixed(2) + '%';
     $('ch2-eq').innerHTML = `tilted qubit = <b>${c.toFixed(3)}</b> |+⟩ − i <b>${s.toFixed(3)}</b> |−⟩`;
     $('ch2-counts').textContent = counts.fine + counts.flip
-      ? `Out of ${counts.fine + counts.flip} checks: ${counts.fine} said fine, ${counts.flip} said flipped (${(100 * counts.flip / (counts.fine + counts.flip)).toFixed(1)}%).`
-      : 'Press the button to check 1,000 identical qubits.';
+      ? `${counts.fine + counts.flip} measurements: ${counts.fine} fine, ${counts.flip} flipped (${(100 * counts.flip / (counts.fine + counts.flip)).toFixed(1)}%).`
+      : 'Each measurement returns fine or flipped with the probabilities above.';
   }
   $('ch2-theta').oninput = () => { counts = { fine: 0, flip: 0 }; render(); };
   $('ch2-run').onclick = () => {

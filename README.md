@@ -1,6 +1,6 @@
 # Simulation 1 · From phase noise to error correction
 
-An interactive, beginner-friendly walkthrough of the MSQT research project: how phase noise on a transmon qubit becomes stabilizer detection events, how long it takes a stabilizer to notice the noise, and how a minimum-weight perfect matching (MWPM) decoder turns detection events into a correction.
+An interactive walkthrough of the MSQT research project: how phase noise on a transmon qubit becomes stabilizer detection events, how long it takes a stabilizer to notice the noise, and how a minimum-weight perfect matching (MWPM) decoder turns detection events into a correction.
 
 **Open it:** download the repo and open `index.html` in any browser, or enable GitHub Pages (Settings → Pages → Deploy from branch → `main` / root) to get a shareable link.
 
@@ -8,7 +8,7 @@ No install, no build step, no internet needed: plain HTML, CSS and JavaScript.
 
 ## Simulation Lab (`lab.html`)
 
-A separate page where you control every parameter yourself and see when a weight-4 stabilizer first detects the noise:
+Separate page for setting all noise and timing parameters of a weight-4 stabilizer:
 
 - **Noise:** which qubit it starts on, start time, duration, decay time, peak strength (kHz), steady or OU-fluctuating (with memory τc)
 - **Propagation:** spread to neighbouring qubits, delay per hop, strength kept per hop
@@ -17,7 +17,7 @@ A separate page where you control every parameter yourself and see when a weight
 
 Presets: typical transmon drift (15 kHz, OU), strong TLS burst (140 kHz), burst spreading across qubits, fast circuit (300 ns cycle).
 
-## The guided tour (`index.html`)
+## Walkthrough (`index.html`)
 
 | Step | Topic | What you can do |
 |---|---------|-----------------|
@@ -43,7 +43,7 @@ Presets: typical transmon drift (15 kHz, OU), strong TLS burst (140 kHz), burst 
 ## Files
 
 ```
-index.html          the guided tour (Steps 1–7)
+index.html          walkthrough (Steps 1–7)
 css/style.css       styles (light and dark mode)
 js/common.js        shared helpers (globe drawing, flip probability)
 js/ch{i}-phase.js     Step 1
