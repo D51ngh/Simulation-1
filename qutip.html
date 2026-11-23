@@ -9,11 +9,58 @@
 <body>
 <header class="hero">
   <div class="kicker">Simulation 1 · QuTiP</div>
-  <h1>Bloch-sphere evolution under H(t), with angle changes at each check</h1>
-  <p>A data qubit evolves under the noise Hamiltonian, solved numerically with QuTiP. An X-stabilizer check projects the qubit once per round. Because the noise is known, each check is labelled with the phase Δθ the qubit accumulated since the previous check, and each detection event with the change of the syndrome.</p>
+  <h1>From noise to angles to syndromes, and back</h1>
+  <p>A data qubit evolves under a known noise Hamiltonian, solved with QuTiP, and is checked by an X stabilizer once per round. Each check is labelled with the phase Δθ accumulated since the previous check. The goal is to find out how much of this angle information can be recovered from the syndromes alone.</p>
   <p class="note"><a href="index.html" style="color:var(--accent)">Walkthrough</a> · <a href="lab.html" style="color:var(--accent)">Lab</a> · Source: <code>qutip_sim/bloch_stabilizer.py</code></p>
 </header>
 <main>
+<section class="chapter">
+  <h2>Purpose</h2>
+  <p>A decoder never sees the noise. It only sees syndromes. This page tests how much information about the noise the syndromes contain. The approach has two stages:</p>
+  <ol>
+    <li><b>Forward (noise known):</b> write the noise as a phase angle for every round, simulate the stabilizer checks, and record which rounds produce detection events.</li>
+    <li><b>Reverse (noise unknown):</b> start from the syndromes of many shots only, estimate the angle in each round, and compare the estimate with the true angle from stage 1.</li>
+  </ol>
+  <p>If the reverse stage recovers the angles, the same procedure can be applied to hardware, where the noise is not known.</p>
+</section>
+<section class="chapter">
+  <h2>Writing the noise as angles</h2>
+  <p>The noise is a frequency shift δω(t). In the rotating frame it enters the two-level Hamiltonian</p>
+  <div class="math">H(t) = ½ δω(t) σ<sub>z</sub></div>
+  <p>This Hamiltonian contains only σ<sub>z</sub>, so its exact solution is a rotation about the Z axis by the accumulated phase. Between two checks (round r):</p>
+  <div class="math">Δθ<sub>r</sub> = ∫ δω(t) dt &nbsp;(over the window between the two CNOT samples)</div>
+  <p>Example: a steady shift of 100 kHz is 2π × 0.1 = 0.63 rad/µs, so a 1 µs round accumulates 0.63 rad ≈ 36°. For fluctuating noise the integral is evaluated in 1 ns steps.</p>
+  <p>Here QuTiP solves H(t) numerically instead of using this formula. The two agree to within 0.01° in every round (table below), which confirms the formula for pure dephasing. Gates, T₁ or leakage would require the numerical solution.</p>
+  <p>Each angle sets the probability that the check reports a change: P(flip) = sin²(Δθ<sub>r</sub>/2).</p>
+</section>
+<section class="chapter">
+  <h2>Retrieving the angles from syndromes</h2>
+  <p>A single shot gives one bit per round, which cannot determine an angle. Over N shots, the fraction f<sub>r</sub> of shots with a detection in round r estimates sin²(Δθ<sub>r</sub>/2). What can be recovered depends on the noise:</p>
+  <table class="simple">
+    <tr><th>Noise</th><th>Recovered quantity</th><th>Estimate</th></tr>
+    <tr><td>Repeatable (same in every shot, e.g. a reproducible burst)</td><td>Angle per round, |Δθ<sub>r</sub>|; mean shift |δω<sub>r</sub>| ≈ |Δθ<sub>r</sub>|/T</td><td>|Δθ<sub>r</sub>| = 2·arcsin√f<sub>r</sub></td></tr>
+    <tr><td>Random (OU, different in every shot)</td><td>Spread of the angle per round</td><td>Var(Δθ<sub>r</sub>) = −2 ln(1 − 2f<sub>r</sub>)</td></tr>
+    <tr><td>Random (OU), several cycle times</td><td>Noise strength V and memory τc</td><td>Fit Var(Δθ) = 2Vτc²[T/τc − 1 + e<sup>−T/τc</sup>]</td></tr>
+    <tr><td>Random (OU), consecutive rounds</td><td>Noise memory τc (independent check)</td><td>P(detection next | detection now) ÷ P(detection next) &gt; 1 for long memory</td></tr>
+  </table>
+  <h3>Limits</h3>
+  <ul>
+    <li>The sign of Δθ is lost: a qubit running fast and one running slow give the same statistics.</li>
+    <li>Time resolution is one round; fluctuations faster than the cycle time average out.</li>
+    <li>The inversion becomes unreliable as f<sub>r</sub> approaches 0.5 (|Δθ| near 90° or above).</li>
+    <li>The statistical error on f<sub>r</sub> is about √(f<sub>r</sub>/N), so small angles need many shots.</li>
+    <li>For random noise, the exact noise curve of an individual shot cannot be recovered, only its statistics.</li>
+    <li>On hardware, measurement errors add false detections and must be modelled; a weight-4 stabilizer sees only the parity of its four qubits, so neighbouring stabilizers are needed to locate the qubit.</li>
+  </ul>
+</section>
+<section class="chapter">
+  <h2>How the recovered information is used</h2>
+  <ul>
+    <li><b>Decoder weights.</b> The recovered angle size and noise memory give the probability of each error and how errors cluster in time. These set the edge weights of a noise-aware decoder, which then expects further errors near a recent detection.</li>
+    <li><b>Hardware diagnosis.</b> Per-round angles show which qubit is noisy, when a burst (e.g. a TLS event) started, and whether it spread, using syndromes that are already collected during error correction.</li>
+    <li><b>Cycle-time choice.</b> Comparing τc with the cycle time T shows whether checking more often reduces or increases errors and detection latency.</li>
+  </ul>
+</section>
 <section class="chapter">
   <h2>Model</h2>
   <div class="math">δω(t) → H(t) = ½ δω(t) σ<sub>z</sub> → ρ(t) from QuTiP mesolve → projection onto |±⟩ at each CNOT sample → syndrome ±1 → detection event</div>
@@ -33,7 +80,7 @@
   <p>The orange arrow is the Bloch vector of the data qubit (rotating frame) and the dots trace its path since the last check. At each check the vector is projected onto |+⟩ or |−⟩. The panel lists, per round, the accumulated phase Δθ, the resulting flip probability sin²(Δθ/2), the syndrome and any detection event.</p>
 </section>
 <section class="chapter">
-  <h2>Angle change per round</h2>
+  <h2>Forward stage: angle change per round</h2>
   <div class="demo"><img src="qutip_sim/output/angle_changes.png" alt="Noise and phase since last check, with the angle change written at each check" style="width:100%"></div>
   <table class="simple">
     <tr><th>Round</th><th>Sample time (ns)</th><th>Δθ from ∫δω dt</th><th>Δθ from QuTiP state</th><th>P(flip)</th><th>Syndrome</th><th>Event</th></tr>
