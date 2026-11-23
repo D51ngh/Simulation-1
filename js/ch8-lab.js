@@ -94,7 +94,7 @@
   }
 
   // ---------------- state & drawing ----------------
-  let p = P(), cur = shot(p, true), t = 0, playing = false, last = 0, stats = null;
+  let p = P(), cur = shot(p, true), t = 0, playing = false, last = 0;
 
   function phaseText(tc) {
     const S = p.s;
@@ -178,26 +178,96 @@
 
   function render() { drawLive(); drawTimeline(); summary(); }
 
+  // ---------------- many shots + syndrome history ----------------
+  let hist = null, sel = 0;
   function runStats(SHOTS) {
-    const lat = [], byRound = Array(NR).fill(0); let det = 0;
+    const lat = [], byRound = Array(NR).fill(0), recs = [];
+    let det = 0;
     for (let i = 0; i < SHOTS; i++) {
       const o = shot(p, false);
       o.d.forEach((v, r) => byRound[r] += v);
       if (o.first) { det++; lat.push(o.first.t - p.tn); }
+      recs.push({ s: o.s, d: o.d, flips: o.flips, first: o.first });
     }
     lat.sort((a, b) => a - b);
     const mean = lat.length ? lat.reduce((a, b) => a + b, 0) / lat.length : 0, med = lat.length ? lat[Math.floor(lat.length / 2)] : 0;
-    stats = { det, mean, med, byRound };
     $('lab-stats').innerHTML = `<div class="stats">
       <div class="stat"><span>Shots with a detection</span><b>${(100 * det / SHOTS).toFixed(1)}%</b></div>
       <div class="stat"><span>Mean latency</span><b>${det ? Math.round(mean) + ' ns' : '—'}</b></div>
       <div class="stat"><span>Median latency</span><b>${det ? Math.round(med) + ' ns' : '—'}</b></div></div>
       <table class="simple"><tr><th>Round</th>${byRound.map((_, r) => `<th>R${r + 1}</th>`).join('')}</tr>
       <tr><td>Detection rate</td>${byRound.map(k => `<td>${(100 * k / SHOTS).toFixed(1)}%</td>`).join('')}</tr></table>
-      <p class="note">${SHOTS.toLocaleString()} shots. Latency: noise onset to arrival of the first detection result. Statistical uncertainty ≈ ±${(100 / Math.sqrt(SHOTS)).toFixed(1)}%.</p>`;
+      <p class="note">${SHOTS.toLocaleString()} shots × ${NR} rounds = ${(SHOTS * NR).toLocaleString()} syndrome measurements. Latency: noise onset to arrival of the first detection result. Statistical uncertainty ≈ ±${(100 / Math.sqrt(SHOTS)).toFixed(1)}%.</p>`;
+    hist = { n: SHOTS, T: p.T, res: p.s.res, tn: p.tn, recs };
+    sel = Math.max(0, recs.findIndex(r => r.first));
+    $('lab-hist').style.display = '';
+    $('lab-shot').max = SHOTS; $('lab-shoterr').textContent = '';
+    renderHistory();
   }
 
-  function newShot() { p = P(); cur = shot(p, true); t = 0; stats = null; $('lab-stats').innerHTML = '<p class="note">Set the number of shots and press Run.</p>'; render(); }
+  const resTime = r => r * hist.T + hist.res;                 // arrival time of round r's result (0-based r)
+  const sign = b => b ? '−1' : '+1';                         // syndrome bit → stabilizer eigenvalue
+  const qList = f => f ? f.map((v, q) => v ? 'Q' + (q + 1) : null).filter(Boolean).join(', ') : '';
+
+  function renderShot() {
+    const rec = hist.recs[sel];
+    $('lab-shot').value = sel + 1;
+    const cells = (fn) => rec.s.map((_, r) => `<td>${fn(r)}</td>`).join('');
+    $('lab-shotview').innerHTML = `<table class="simple" style="text-align:center">
+      <tr><th style="text-align:left">Shot ${sel + 1}</th>${rec.s.map((_, r) => `<th>R${r + 1}</th>`).join('')}</tr>
+      <tr><td style="text-align:left">Result time (ns)</td>${cells(r => resTime(r))}</tr>
+      <tr><td style="text-align:left">Syndrome</td>${cells(r => `<b style="color:${rec.s[r] ? 'var(--coral-dark)' : 'var(--text)'}">${sign(rec.s[r])}</b>`)}</tr>
+      <tr><td style="text-align:left">Detection</td>${cells(r => rec.d[r] ? '<span class="tag bad">yes</span>' : '—')}</tr>
+      <tr><td style="text-align:left">Z errors (hidden)</td>${cells(r => qList(rec.flips[r]) || '—')}</tr></table>
+      <p class="note">${rec.first ? `First detection: round ${rec.first.r}, ${rec.first.t} ns, ${rec.first.t - hist.tn} ns after onset.` : 'No detection in this shot.'} Syndrome +1 = even parity, −1 = odd parity.</p>`;
+  }
+
+  function renderHistory() {
+    const H = hist, N = H.n, R = NR;
+    renderShot();
+    // Detections per round, with the shots involved.
+    const perRound = Array.from({ length: R }, () => []);
+    H.recs.forEach((rec, i) => rec.d.forEach((v, r) => { if (v) perRound[r].push(i); }));
+    $('lab-round').innerHTML = `<table class="simple"><tr><th>Round</th><th>Result at</th><th>Time after onset</th><th>Shots</th><th>Shot numbers (click to open)</th></tr>${perRound.map((list, r) =>
+      `<tr><td>R${r + 1}</td><td>${resTime(r)} ns</td><td>${resTime(r) - H.tn} ns</td><td>${list.length}</td><td>${list.slice(0, 12).map(i => `<a href="#" data-shot="${i}" style="color:var(--accent)">${i + 1}</a>`).join(', ')}${list.length > 12 ? ` … +${list.length - 12}` : ''}</td></tr>`).join('')}</table>`;
+    // Detections per shot and spacing between consecutive detections in the same shot.
+    const count = [0, 0, 0, 0], gaps = Array(R).fill(0); let pairs = 0;
+    H.recs.forEach(rec => {
+      const rs = rec.d.map((v, r) => v ? r : -1).filter(r => r >= 0);
+      count[Math.min(3, rs.length)]++;
+      for (let k = 1; k < rs.length; k++) { gaps[rs[k] - rs[k - 1]]++; pairs++; }
+    });
+    $('lab-spacing').innerHTML = `<div class="two"><table class="simple"><tr><th>Detections per shot</th><th>Shots</th><th>%</th></tr>${count.map((c, k) => `<tr><td>${k === 3 ? '3 or more' : k}</td><td>${c}</td><td>${(100 * c / N).toFixed(1)}%</td></tr>`).join('')}</table>
+      <table class="simple"><tr><th>Spacing</th><th>Time apart</th><th>Pairs</th><th>%</th></tr>${gaps.map((c, g) => g ? `<tr><td>${g} round${g > 1 ? 's' : ''}</td><td>${g * H.T} ns</td><td>${c}</td><td>${pairs ? (100 * c / pairs).toFixed(1) : '0.0'}%</td></tr>` : '').join('')}</table></div>
+      <p class="note">Spacing: time between consecutive detection events within the same shot (${pairs} pairs). Short spacings indicate correlated or persistent noise.</p>`;
+    // Memory check: does a detection in round r make one in round r+1 more likely?
+    let rows = '';
+    for (let r = 0; r < R - 1; r++) {
+      let a = 0, ab = 0, b = 0;
+      H.recs.forEach(rec => { if (rec.d[r]) { a++; if (rec.d[r + 1]) ab++; } if (rec.d[r + 1]) b++; });
+      const cond = a ? ab / a : null, base = b / N;
+      rows += `<tr><td>R${r + 1} → R${r + 2}</td><td>${(100 * base).toFixed(1)}%</td><td>${cond === null ? '—' : (100 * cond).toFixed(1) + '%'}</td><td>${a}</td><td>${cond !== null && base > 0 ? (cond / base).toFixed(2) : '—'}</td></tr>`;
+    }
+    $('lab-memory').innerHTML = `<table class="simple"><tr><th>Rounds</th><th>P(detection in next round)</th><th>P(next | detection now)</th><th>Shots with detection now</th><th>Ratio</th></tr>${rows}</table>
+      <p class="note">Ratio ≈ 1: consecutive detections are independent. Ratio &gt; 1: detections cluster in time. Ratios based on few shots are unreliable.</p>`;
+    document.querySelectorAll('#lab-round a[data-shot]').forEach(a => a.onclick = e => { e.preventDefault(); sel = +a.dataset.shot; renderShot(); $('lab-shotview').scrollIntoView({ block: 'nearest' }); });
+  }
+
+  function csv() {
+    const H = hist, lines = ['shot,round,result_time_ns,syndrome,detection,z_errors_hidden'];
+    H.recs.forEach((rec, i) => rec.s.forEach((b, r) => lines.push(`${i + 1},${r + 1},${resTime(r)},${sign(b)},${rec.d[r]},"${qList(rec.flips[r])}"`)));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
+    a.download = 'syndrome_history.csv'; a.click(); URL.revokeObjectURL(a.href);
+  }
+  function go(i) { if (!hist) return; $('lab-shoterr').textContent = ''; sel = Math.min(hist.n - 1, Math.max(0, i)); renderShot(); }
+  $('lab-prev').onclick = () => go(sel - 1);
+  $('lab-next').onclick = () => go(sel + 1);
+  $('lab-nextdet').onclick = () => { if (!hist) return; for (let k = 1; k <= hist.n; k++) { const i = (sel + k) % hist.n; if (hist.recs[i].first) return go(i); } };
+  $('lab-shot').oninput = () => { const v = Number($('lab-shot').value); if (hist && Number.isInteger(v) && v >= 1 && v <= hist.n) { $('lab-shoterr').textContent = ''; go(v - 1); } else if (hist) $('lab-shoterr').textContent = `Enter a shot number from 1 to ${hist.n}.`; };
+  $('lab-csv').onclick = () => hist && csv();
+
+  function newShot() { p = P(); cur = shot(p, true); t = 0; hist = null; $('lab-hist').style.display = 'none'; $('lab-stats').innerHTML = '<p class="note">Set the number of shots and press Run.</p>'; render(); }
   function loop(ts) {
     const dt = (ts - last) / 1000; last = ts;
     if (playing) { t = Math.min(p.N - 1, t + Math.min(dt, 0.1) * +$(ids.speed).value); if (t >= p.N - 1) { playing = false; $('lab-play').textContent = 'Play'; } render(); }

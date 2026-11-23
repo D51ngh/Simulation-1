@@ -15,6 +15,8 @@ Separate page for setting all noise and timing parameters of a weight-4 stabiliz
 - **Circuit timing:** ancilla reset, Hadamard, CNOT, readout, electronics delay, cycle time
 - **Outputs:** an animated shot, a timeline of the noise on each qubit with the CNOT sample times and detections, and statistics over as many shots as you choose (detection probability, mean/median latency, detection rate per round)
 
+- **Syndrome history:** after a run, open any shot to see its rounds as +1/−1 with result times and the hidden Z errors; detections by round (with clickable shot numbers); detections per shot; spacing between detections in the same shot (rounds and ns); a temporal-correlation check P(next | detection now) vs P(next); CSV export of the full history
+
 Presets: typical transmon drift (15 kHz, OU), strong TLS burst (140 kHz), burst spreading across qubits, fast circuit (300 ns cycle).
 
 ## Walkthrough (`index.html`)

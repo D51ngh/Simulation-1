@@ -118,6 +118,22 @@
         <div id="lab-stats"></div>
       </div>
 
+      <div class="panel" id="lab-hist" style="display:none">
+        <h3 style="margin-top:0">Syndrome history</h3>
+        <div class="row" style="margin-top:0">
+          <label for="lab-shot">Shot</label><input type="number" id="lab-shot" min="1" step="1" value="1" style="width:90px">
+          <button id="lab-prev">Previous</button><button id="lab-next">Next</button><button id="lab-nextdet">Next with a detection</button>
+          <button id="lab-csv">Download CSV</button><span class="err" id="lab-shoterr"></span>
+        </div>
+        <div id="lab-shotview"></div>
+        <h3>Detections by round</h3>
+        <div id="lab-round"></div>
+        <h3>Detections per shot and spacing</h3>
+        <div id="lab-spacing"></div>
+        <h3>Temporal correlation</h3>
+        <div id="lab-memory"></div>
+      </div>
+
       <div class="panel">
         <h3 style="margin-top:0">Model</h3>
         <ul style="font-size:14px;margin:0;padding-left:20px">
