@@ -31,6 +31,12 @@ Presets: typical transmon drift (15 kHz, OU), strong TLS burst (140 kHz), burst 
 | 6 | The decoder: MWPM | Distance-3 surface code: explore pairings, play "you be the decoder", and run any number of random trials to compare logical vs physical error rates |
 | 7 | The thesis | The full chain OU noise → Hamiltonian → tilt → circuit faults → syndromes → decoder, the three memory times, and the experiment plan P0–P5 |
 
+## Model scope
+
+Implemented: frequency-noise fluctuation δω(t) (steady or variance-normalized OU) → two-level Hamiltonian H = ħδωZ/2 → exact phase evolution → Z error with P = sin²(θ/2) → weight-4 syndrome over repeated rounds → detection events and timing. Step 6 MWPM is a single-round teaching example.
+
+Not yet implemented: multilevel transmon Hamiltonian and gate pulses, T₁/T₂ and leakage, correlated multi-qubit (entangled) dynamics, gate and measurement errors, full distance-3 circuit, space-time MWPM with correlation-aware weights. These are planned for a Python research version.
+
 ## Model notes
 
 - Every qubit is drawn as a 3-D Bloch sphere (|0⟩ and |1⟩ at the poles, |+⟩ and |−⟩ on the equator). In Steps 1 and 2 you can drag a sphere to turn it.

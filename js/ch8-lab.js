@@ -278,7 +278,7 @@
   function label(k) {
     const el = $(ids[k]), out = $(ids[k] + 'v'); if (!out) return;
     let v = el.value;
-    if (k === 'f') v = Math.round(+v * 1000) + ' kHz';
+    if (k === 'f') { v = Math.round(+v * 1000) + ' kHz'; const hi = +el.value > 0.14; $('lab-fhint').textContent = hi ? 'Above the typical 5–140 kHz range: exaggerated for illustration.' : 'Typical transmon range: 5–140 kHz.'; $('lab-fhint').style.color = hi ? 'var(--coral-dark)' : ''; }
     else if (k === 'keep') v = Math.round(+v * 100) + '%';
     else if (k === 'td') v = +v >= 20000 ? 'none' : v + ' ns';
     else v = v + (units[k] || '');

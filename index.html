@@ -41,6 +41,7 @@
   <p>A transmon has a known frequency, so its arrow rotates steadily around the equator. This rotation is expected and is not an error. Environmental noise shifts the frequency by a small amount δω, so the qubit rotates slightly too fast or too slow. The resulting angle between where the qubit should be and where it is, is the <b>phase error θ</b>:</p>
   <div class="math">θ = ∫ δω(t) dt</div>
   <p>We describe the qubit in the <b>rotating frame</b>, which follows the expected rotation. In this frame the correct arrow is fixed and only the error moves.</p>
+  <p class="note">Model scope: the noise enters only through the frequency shift δω, giving the two-level Hamiltonian H(t) = ħδω(t)Z/2, whose evolution is exactly U = e<sup>−iθZ/2</sup>. The full multilevel transmon Hamiltonian is not simulated on this site (see Step 7).</p>
 
   <div class="demo">
     <div class="two">
@@ -59,7 +60,7 @@
     <p class="note">Slowed down for visibility.</p>
   </div>
   <h3>Noise model</h3>
-  <p>We model δω as an <b>Ornstein–Uhlenbeck (OU) process</b>, random noise with a finite memory. It has two parameters: the <b>correlation time τc</b> (how long the noise stays correlated with itself) and the <b>variance V</b> (its strength). We hold V fixed and vary τc, so that changes in the results come from the noise memory alone.</p>
+  <p>We model δω as an <b>Ornstein–Uhlenbeck (OU) process</b>, random noise with a finite memory. It has two parameters: the <b>correlation time τc</b> (how long the noise stays correlated with itself) and the <b>variance V</b> (its strength). We hold V fixed and vary τc (σ = √(2V/τc)), so that changes in the results come from the noise memory alone.</p>
   <div class="takeaway"><b>Key point:</b> a frequency error, accumulated over time, rotates the qubit away from its expected state by a phase error θ.</div>
 </section>
 
@@ -69,7 +70,7 @@
   <h2>A phase error is a superposition of "fine" and "flipped"</h2>
   <p>A qubit rotated by θ can be written exactly as a combination of |+⟩ and |−⟩:</p>
   <div class="math">|ψ⟩ = cos(θ/2) |+⟩ − i sin(θ/2) |−⟩</div>
-  <p>A measurement in this basis returns "fine" with probability cos²(θ/2) and "flipped" with probability sin²(θ/2). A full rotation of θ = 180° is a certain flip, called a <b>Z error</b> (phase flip).</p>
+  <p>A measurement in this basis returns "fine" with probability cos²(θ/2) and "flipped" with probability sin²(θ/2). A 180° phase rotation, or π-rotation about the Z axis, produces a certain <b>Z error</b> (phase flip).</p>
   <div class="demo">
     <div class="two">
       <canvas id="ch2-globe" style="width:100%"></canvas>
@@ -101,7 +102,7 @@
     <li>Reset the ancilla to |0⟩ and apply a Hadamard, giving |+⟩.</li>
     <li>Apply a CNOT between ancilla and data qubit. Through phase kickback, the "fine" component of the data leaves the ancilla in |+⟩ and the "flipped" component leaves it in |−⟩.</li>
     <li>Apply a Hadamard and measure the ancilla, giving 0 or 1.</li>
-    <li>The measurement projects the data qubit onto exactly |+⟩ or |−⟩. The phase error is removed; it only set the probability of each outcome.</li>
+    <li>The measurement projects the qubit onto |+⟩ or |−⟩, so the accumulated phase is converted into a discrete stabilizer outcome.</li>
   </ol>
   <p>The measured value is the <b>syndrome</b> s. A <b>detection event</b> is a change in the syndrome between consecutive rounds, d<sub>r</sub> = s<sub>r</sub> ⊕ s<sub>r−1</sub>. Detection events are the only information the decoder receives.</p>
   <div class="demo">
@@ -238,6 +239,16 @@
     <tr><td>P5</td><td>Inference from many shots</td><td>Recover phase per round</td></tr>
     <tr><td>P6</td><td>Distance-3 code with MWPM</td><td>Logical error rate versus τc</td></tr>
     <tr><td>P7</td><td>Correlation-aware decoder</td><td>Test whether noise-informed weights reduce the logical error rate</td></tr>
+  </table>
+  <h3>Scope of this simulation</h3>
+  <table class="simple">
+    <tr><th>Link in the chain</th><th>Implemented here</th><th>Not yet implemented</th></tr>
+    <tr><td>Physical fluctuation</td><td>Frequency shift δω(t): steady or OU (variance-normalized)</td><td>Flux, charge and TLS sources with device susceptibilities; 1/f and telegraph spectra</td></tr>
+    <tr><td>H(t)</td><td>Two-level H = ħδω(t)Z/2 in the rotating frame</td><td>Multilevel transmon Hamiltonian, gate pulses, couplers, crosstalk</td></tr>
+    <tr><td>Qubit evolution</td><td>Exact phase evolution U = e<sup>−iθZ/2</sup>, single qubits</td><td>Numerical evolution with T₁/T₂ (Lindblad), leakage, entangled multi-qubit state</td></tr>
+    <tr><td>Circuit fault</td><td>Projection to a Z error with P = sin²(θ/2) at the CNOT sample time</td><td>Gate and measurement errors, hook errors from the CNOT order</td></tr>
+    <tr><td>Syndrome</td><td>Weight-4 parity, repeated rounds, detection events, timing</td><td>Full distance-3 circuit with all stabilizers and noisy measurement</td></tr>
+    <tr><td>Decoder</td><td>MWPM on one perfect round (teaching example)</td><td>Space-time MWPM over repeated noisy rounds with correlation-aware weights</td></tr>
   </table>
   <h3>Confounding effects</h3>
   <p>Gate scheduling, measurement errors, gradual phase build-up, one error triggering two stabilizers, and error cancellation can all produce apparent correlations in the detection record. The simulation therefore stores the true noise history separately from the decoder-visible data, so every inference can be checked against ground truth.</p>

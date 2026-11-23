@@ -49,7 +49,7 @@
     () => '<b>Ancilla preparation.</b> Reset to |0⟩, then Hadamard to |+⟩.',
     () => '<b>CNOT.</b> The |+⟩ component of the data maps to ancilla 0, the |−⟩ component to ancilla 1.',
     () => `<b>Measurement.</b> Hadamard and readout of the ancilla. P(1) = ${(100 * S.p).toFixed(1)}%. Result: <b>${S.out}</b>.`,
-    () => `<b>Projection.</b> The data qubit is now exactly ${S.fl ? '|−⟩' : '|+⟩'}. The phase error is removed.`,
+    () => `<b>Projection.</b> The measurement projects the qubit onto ${S.fl ? '|−⟩' : '|+⟩'}, converting the accumulated phase into a discrete stabilizer outcome.`,
     () => `<b>Record.</b> s = ${S.s[S.r]}, d = ${S.d[S.r]}${S.d[S.r] ? ' (syndrome changed)' : ''}.`,
     () => '<b>Shot complete.</b> The decoder sees only the detection row. Run multiple shots to estimate the phase per round.'
   ];

@@ -46,7 +46,7 @@
     <span class="note" style="align-self:center">Presets:</span>
     <button data-preset="typical">Typical drift (15 kHz, OU)</button>
     <button data-preset="burst">TLS burst (140 kHz)</button>
-    <button data-preset="spread">Propagating burst</button>
+    <button data-preset="spread">Propagating burst (250 kHz, exaggerated)</button>
     <button data-preset="fast">Fast cycle (300 ns)</button>
   </div>
 
@@ -64,11 +64,11 @@
         <div class="f"><label for="lab-td">Decay time t<sub>d</sub></label><span class="val" id="lab-tdv"></span>
           <input type="range" id="lab-td" min="50" max="20000" step="50" value="1500"><span class="hint">Amplitude ∝ e<sup>−t/t<sub>d</sub></sup>. Maximum = no decay.</span></div>
         <div class="f"><label for="lab-f">Peak frequency shift</label><span class="val" id="lab-fv"></span>
-          <input type="range" id="lab-f" min="0.005" max="1" step="0.005" value="0.25"><span class="hint">Typical transmon range: 5–140 kHz.</span></div>
+          <input type="range" id="lab-f" min="0.005" max="1" step="0.005" value="0.1"><span class="hint" id="lab-fhint">Typical transmon range: 5–140 kHz.</span></div>
         <div class="f"><label for="lab-type">Type</label><span></span>
           <select id="lab-type"><option value="steady">Steady</option><option value="ou">OU (fluctuating)</option></select></div>
         <div class="f"><label for="lab-tc">Correlation time τc</label><span class="val" id="lab-tcv"></span>
-          <input type="range" id="lab-tc" min="10" max="5000" step="10" value="500"><span class="hint">OU only.</span></div>
+          <input type="range" id="lab-tc" min="10" max="5000" step="10" value="500"><span class="hint">OU only. Variance-normalized: the noise strength does not change with τc (σ = √(2V/τc)).</span></div>
       </fieldset>
 
       <fieldset>
@@ -137,12 +137,13 @@
       <div class="panel">
         <h3 style="margin-top:0">Model</h3>
         <ul style="font-size:14px;margin:0;padding-left:20px">
-          <li>Each data qubit accumulates phase δω·dt per nanosecond (1 ns time step).</li>
+          <li>Chain: fluctuation δω(t) → H(t) = ħδω(t)Z/2 → U = e<sup>−iθZ/2</sup> with θ = ∫δω dt (exact for this Hamiltonian, 1 ns steps) → Z error with P = sin²(θ/2) → syndrome → detection event. No decoder is applied in the Lab.</li>
           <li>Each qubit is sampled at the end of its CNOT; phase accumulated afterwards counts toward the next round.</li>
           <li>At the end of readout, the sampled phase θ becomes a Z error with probability sin²(θ/2) and is then reset.</li>
           <li>The syndrome is the parity of the four qubits, so two errors in the same round cancel.</li>
+          <li>OU noise is generated with unit stationary variance and scaled by the peak shift, so Var(δω) is the same for every τc.</li>
           <li>A detection event is a change in the syndrome. Latency is measured from noise onset to arrival of the first detection result.</li>
-          <li>Data qubits are treated independently; this gives correct detection timing but omits the entangled code state.</li>
+          <li>Data qubits are treated independently; this gives correct detection timing but omits the entangled code state and correlated multi-qubit dynamics. Not included: the multilevel transmon Hamiltonian, gate pulses, T₁/T₂, gate and measurement errors.</li>
         </ul>
       </div>
     </div>
