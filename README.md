@@ -31,6 +31,17 @@ Presets: typical transmon drift (15 kHz, OU), strong TLS burst (140 kHz), burst 
 | 6 | The decoder: MWPM | Distance-3 surface code: explore pairings, play "you be the decoder", and run any number of random trials to compare logical vs physical error rates |
 | 7 | The thesis | The full chain OU noise → Hamiltonian → tilt → circuit faults → syndromes → decoder, the three memory times, and the experiment plan P0–P5 |
 
+## QuTiP simulation (`qutip.html`, `qutip_sim/`)
+
+`qutip_sim/bloch_stabilizer.py` evolves a data qubit under H(t) = ½δω(t)σz with QuTiP (`mesolve`, optional T₁/Tφ), applies a projective X-stabilizer check each round, and labels every check with the accumulated phase Δθ (from the known noise and from the QuTiP state; they agree to 0.01°). Outputs a Bloch-sphere MP4, an angle-change plot, `rounds.csv` and `summary.json`.
+
+```
+pip install -r qutip_sim/requirements.txt
+python qutip_sim/bloch_stabilizer.py --f-khz 140 --noise ou --tau-c-us 2 --rounds 8 --seed 3
+```
+
+The Lab's syndrome history also shows the per-qubit Δθ for every round and includes it in the CSV.
+
 ## Model scope
 
 Implemented: frequency-noise fluctuation δω(t) (steady or variance-normalized OU) → two-level Hamiltonian H = ħδωZ/2 → exact phase evolution → Z error with P = sin²(θ/2) → weight-4 syndrome over repeated rounds → detection events and timing. Step 6 MWPM is a single-round teaching example.
@@ -61,5 +72,7 @@ js/ch{i}-zeno.js      Step 4
 js/ch{i}-schedule.js  Step 5
 js/ch{i}-mwpm.js      Step 6
 lab.html            Simulation Lab page
+qutip.html          QuTiP results page
+qutip_sim/          QuTiP script, requirements and outputs
 js/ch8-lab.js       Simulation Lab model and drawing
 ```

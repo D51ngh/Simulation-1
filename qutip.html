@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuTiP simulation · Bloch sphere and detection events</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="kicker">Simulation 1 · QuTiP</div>
+  <h1>Bloch-sphere evolution under H(t), with angle changes at each check</h1>
+  <p>A data qubit evolves under the noise Hamiltonian, solved numerically with QuTiP. An X-stabilizer check projects the qubit once per round. Because the noise is known, each check is labelled with the phase Δθ the qubit accumulated since the previous check, and each detection event with the change of the syndrome.</p>
+  <p class="note"><a href="index.html" style="color:var(--accent)">Walkthrough</a> · <a href="lab.html" style="color:var(--accent)">Lab</a> · Source: <code>qutip_sim/bloch_stabilizer.py</code></p>
+</header>
+<main>
+<section class="chapter">
+  <h2>Model</h2>
+  <div class="math">δω(t) → H(t) = ½ δω(t) σ<sub>z</sub> → ρ(t) from QuTiP mesolve → projection onto |±⟩ at each CNOT sample → syndrome ±1 → detection event</div>
+  <table class="simple">
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>Noise</td><td>OU, variance-normalized; scale 140 kHz (RMS for OU); τc = 2.0 µs; seed 3</td></tr>
+    <tr><td>Onset, duration, decay</td><td>0.3 µs, 7.0 µs, none</td></tr>
+    <tr><td>Cycle time, CNOT sample, result</td><td>1000 ns, 180 ns, 780 ns into each cycle</td></tr>
+    <tr><td>T₁, extra T<sub>φ</sub></td><td>off, off</td></tr>
+    <tr><td>Time step</td><td>1.0 ns</td></tr>
+  </table>
+  <p class="note">The noise scale is above the typical 5–140 kHz range for OU fluctuations (2σ excursions reach ≈ 280 kHz) so that the motion is visible. Change it with <code>--f-khz</code>.</p>
+</section>
+<section class="chapter">
+  <h2>Animation</h2>
+  <div class="demo"><video src="qutip_sim/output/bloch_animation.mp4" controls loop muted playsinline style="width:100%;border-radius:8px"></video></div>
+  <p>The orange arrow is the Bloch vector of the data qubit (rotating frame) and the dots trace its path since the last check. At each check the vector is projected onto |+⟩ or |−⟩. The panel lists, per round, the accumulated phase Δθ, the resulting flip probability sin²(Δθ/2), the syndrome and any detection event.</p>
+</section>
+<section class="chapter">
+  <h2>Angle change per round</h2>
+  <div class="demo"><img src="qutip_sim/output/angle_changes.png" alt="Noise and phase since last check, with the angle change written at each check" style="width:100%"></div>
+  <table class="simple">
+    <tr><th>Round</th><th>Sample time (ns)</th><th>Δθ from ∫δω dt</th><th>Δθ from QuTiP state</th><th>P(flip)</th><th>Syndrome</th><th>Event</th></tr>
+    <tr><td>R1</td><td>180</td><td>+0.00°</td><td>+0.00°</td><td>0.0%</td><td>+1</td><td>—</td></tr><tr style="background:var(--coral-bg)"><td>R2</td><td>1180</td><td>+99.26°</td><td>+99.26°</td><td>58.0%</td><td>-1</td><td><b>detection, + → −</b></td></tr><tr><td>R3</td><td>2180</td><td>+108.50°</td><td>+108.50°</td><td>65.9%</td><td>-1</td><td>—</td></tr><tr><td>R4</td><td>3180</td><td>+63.49°</td><td>+63.49°</td><td>27.7%</td><td>-1</td><td>—</td></tr><tr><td>R5</td><td>4180</td><td>+15.62°</td><td>+15.62°</td><td>1.8%</td><td>-1</td><td>—</td></tr><tr><td>R6</td><td>5180</td><td>-8.25°</td><td>-8.25°</td><td>0.5%</td><td>-1</td><td>—</td></tr><tr><td>R7</td><td>6180</td><td>+3.83°</td><td>+3.83°</td><td>0.1%</td><td>-1</td><td>—</td></tr><tr><td>R8</td><td>7180</td><td>-4.03°</td><td>-4.03°</td><td>0.1%</td><td>-1</td><td>—</td></tr>
+  </table>
+  <p class="note">The two Δθ columns agree to within 0.01°, which validates the numerical H(t) evolution against the analytic result for pure dephasing. A large Δθ does not guarantee a detection: in round 3 the flip probability was 66% but the outcome was no change.</p>
+</section>
+<section class="chapter">
+  <h2>Run it yourself</h2>
+  <pre style="background:var(--neutral);padding:12px;border-radius:8px;overflow-x:auto;font-size:13px">pip install -r qutip_sim/requirements.txt
+python qutip_sim/bloch_stabilizer.py --f-khz 140 --noise ou --tau-c-us 2 --rounds 8 --seed 3
+# options: --onset-us --duration-us --decay-us --cycle-us --sample-us --result-us
+#          --t1-us --tphi-us (T1 / extra dephasing via mesolve) --no-video</pre>
+  <p>Outputs in <code>qutip_sim/output/</code>: <code>bloch_animation.mp4</code>, <code>angle_changes.png</code>, <code>rounds.csv</code>, <code>summary.json</code>. With <code>--t1-us</code> the Bloch vector shortens and moves toward |0⟩, i.e. inside the sphere, as the state becomes mixed.</p>
+  <p class="note">Scope: one data qubit with an ideal, instantaneous projective check at the CNOT sample time. The multilevel transmon, gate pulses, the entangled four-qubit stabilizer and measurement errors are not yet included.</p>
+</section>
+</main>
+<footer>Simulation 1 · QuTiP simulation</footer>
+</body>
+</html>

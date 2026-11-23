@@ -1,0 +1,4 @@
+qutip>=5.0
+numpy
+matplotlib
+pillow

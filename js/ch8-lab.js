@@ -59,7 +59,7 @@
       for (let i = 1; i < xi.length; i++) xi[i] = a * xi[i - 1] + b * randn();
     } else xi.fill(1);
     const base = [0, 0, 0, 0], tilt = [0, 0, 0, 0], samp = [0, 0, 0, 0], pend = [0, 0, 0, 0];
-    const pendS = [], s = [], d = [], flips = [];
+    const pendS = [], s = [], d = [], flips = [], phases = [];
     const ang = record ? new Float32Array(4 * N) : null, dw = record ? new Float32Array(4 * N) : null;
     let first = null;
     const S = p.s;
@@ -74,6 +74,7 @@
       for (let q = 0; q < 4; q++) if (tc === S.cnot[q][1]) { samp[q] = base[q]; pend[q] = tilt[q]; } // the check looks at qubit q
       if (tc === S.meas) {                                                                          // the tag is read
         let par = 0; const f = [0, 0, 0, 0];
+        phases[r] = pend.slice();                                                                   // true phase per qubit in this round (known noise)
         for (let q = 0; q < 4; q++) {
           f[q] = Math.random() < SIM.pFlip(pend[q]) ? 1 : 0;
           par ^= samp[q] ^ f[q]; base[q] ^= f[q]; tilt[q] -= pend[q]; pend[q] = 0;
@@ -90,7 +91,7 @@
         }
       }
     }
-    return { s, d, flips, first, ang, dw };
+    return { s, d, flips, phases, first, ang, dw };
   }
 
   // ---------------- state & drawing ----------------
@@ -157,6 +158,7 @@
       for (let i = 0; i < p.N; i += step) pts.push(`${X(i).toFixed(1)},${(y - 15 * cur.dw[q * p.N + i] / max).toFixed(1)}`);
       h += `<polyline points="${pts.join(' ')}" fill="none" stroke="var(--coral)" stroke-width="1.5"/>`;
       for (let r = 0; r < NR; r++) { const x = X(r * p.T + p.s.cnot[q][1]); h += `<line x1="${x}" y1="${y - 6}" x2="${x}" y2="${y + 6}" stroke="var(--accent)" stroke-width="2"/>`; }
+      cur.phases.forEach((ph, r) => { const v = ph[q] * 180 / Math.PI; if (Math.abs(v) >= 1) h += T_(X(r * p.T + p.s.cnot[q][1]) + 2, y - 9, (v > 0 ? '+' : '−') + Math.abs(v).toFixed(0) + '°', { s: 9.5, a: 'start', c: cur.flips[r] && cur.flips[r][q] ? 'var(--coral-dark)' : 'var(--text2)', w: cur.flips[r] && cur.flips[r][q] ? 700 : 400 }); });
       cur.flips.forEach((f, r) => { if (f && f[q]) h += T_(X(r * p.T + p.s.meas), y + 18, 'flip', { s: 10, c: 'var(--coral-dark)', w: 600 }); });
     }
     h += `<line x1="${X(p.tn)}" y1="24" x2="${X(p.tn)}" y2="222" stroke="var(--coral)" stroke-dasharray="4 4"/>` + T_(X(p.tn), 236, 'noise starts', { s: 11, c: 'var(--coral-dark)' });
@@ -187,7 +189,7 @@
       const o = shot(p, false);
       o.d.forEach((v, r) => byRound[r] += v);
       if (o.first) { det++; lat.push(o.first.t - p.tn); }
-      recs.push({ s: o.s, d: o.d, flips: o.flips, first: o.first });
+      recs.push({ s: o.s, d: o.d, flips: o.flips, phases: o.phases, first: o.first });
     }
     lat.sort((a, b) => a - b);
     const mean = lat.length ? lat.reduce((a, b) => a + b, 0) / lat.length : 0, med = lat.length ? lat[Math.floor(lat.length / 2)] : 0;
@@ -208,6 +210,8 @@
   const resTime = r => r * hist.T + hist.res;                 // arrival time of round r's result (0-based r)
   const sign = b => b ? '−1' : '+1';                         // syndrome bit → stabilizer eigenvalue
   const qList = f => f ? f.map((v, q) => v ? 'Q' + (q + 1) : null).filter(Boolean).join(', ') : '';
+  const deg = x => (x >= 0 ? '+' : '−') + Math.abs(x * 180 / Math.PI).toFixed(1) + '°';
+  const phList = ph => ph ? ph.map((x, q) => Math.abs(x) * 180 / Math.PI >= 0.05 ? `Q${q + 1} ${deg(x)}` : null).filter(Boolean).join('<br>') : '';
 
   function renderShot() {
     const rec = hist.recs[sel];
@@ -218,8 +222,9 @@
       <tr><td style="text-align:left">Result time (ns)</td>${cells(r => resTime(r))}</tr>
       <tr><td style="text-align:left">Syndrome</td>${cells(r => `<b style="color:${rec.s[r] ? 'var(--coral-dark)' : 'var(--text)'}">${sign(rec.s[r])}</b>`)}</tr>
       <tr><td style="text-align:left">Detection</td>${cells(r => rec.d[r] ? '<span class="tag bad">yes</span>' : '—')}</tr>
+      <tr><td style="text-align:left">Phase in round, Δθ (hidden)</td>${cells(r => `<span style="font-size:12px;color:${rec.d[r] ? 'var(--coral-dark)' : 'var(--text2)'}">${phList(rec.phases[r]) || '—'}</span>`)}</tr>
       <tr><td style="text-align:left">Z errors (hidden)</td>${cells(r => qList(rec.flips[r]) || '—')}</tr></table>
-      <p class="note">${rec.first ? `First detection: round ${rec.first.r}, ${rec.first.t} ns, ${rec.first.t - hist.tn} ns after onset.` : 'No detection in this shot.'} Syndrome +1 = even parity, −1 = odd parity.</p>`;
+      <p class="note">${rec.first ? `First detection: round ${rec.first.r}, ${rec.first.t} ns, ${rec.first.t - hist.tn} ns after onset.` : 'No detection in this shot.'} Syndrome +1 = even parity, −1 = odd parity. Δθ is the phase each qubit accumulated between its previous and current CNOT sample, known from the simulated noise; it sets P(Z error) = sin²(Δθ/2).</p>`;
   }
 
   function renderHistory() {
@@ -254,8 +259,8 @@
   }
 
   function csv() {
-    const H = hist, lines = ['shot,round,result_time_ns,syndrome,detection,z_errors_hidden'];
-    H.recs.forEach((rec, i) => rec.s.forEach((b, r) => lines.push(`${i + 1},${r + 1},${resTime(r)},${sign(b)},${rec.d[r]},"${qList(rec.flips[r])}"`)));
+    const H = hist, lines = ['shot,round,result_time_ns,syndrome,detection,z_errors_hidden,dtheta_Q1_deg,dtheta_Q2_deg,dtheta_Q3_deg,dtheta_Q4_deg'];
+    H.recs.forEach((rec, i) => rec.s.forEach((b, r) => lines.push(`${i + 1},${r + 1},${resTime(r)},${b ? '-1' : '+1'},${rec.d[r]},"${qList(rec.flips[r])}",${rec.phases[r].map(x => (x * 180 / Math.PI).toFixed(3)).join(',')}`)));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
     a.download = 'syndrome_history.csv'; a.click(); URL.revokeObjectURL(a.href);

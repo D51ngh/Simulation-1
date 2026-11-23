@@ -1,0 +1,120 @@
+{
+  "parameters": {
+    "f_khz": 140.0,
+    "noise": "ou",
+    "tau_c_us": 2.0,
+    "onset_us": 0.3,
+    "duration_us": 7.0,
+    "decay_us": 0.0,
+    "cycle_us": 1.0,
+    "sample_us": 0.18,
+    "result_us": 0.78,
+    "rounds": 8,
+    "t1_us": 0.0,
+    "tphi_us": 0.0,
+    "dt_ns": 1.0,
+    "frames_per_round": 28,
+    "fps": 14,
+    "seed": 3,
+    "out": "/home/claude/simulation-1/qutip_sim/output",
+    "no_video": false
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "t_sample_us": 0.18,
+      "t_result_us": 0.78,
+      "dtheta_true_deg": 0.0,
+      "dtheta_qutip_deg": 0.0,
+      "bloch_length": 1.0,
+      "p_flip": 0.0,
+      "syndrome": "+1",
+      "detection": 0,
+      "change": "none"
+    },
+    {
+      "round": 2,
+      "t_sample_us": 1.18,
+      "t_result_us": 1.78,
+      "dtheta_true_deg": 99.258,
+      "dtheta_qutip_deg": 99.258,
+      "bloch_length": 1.0,
+      "p_flip": 0.5804,
+      "syndrome": "-1",
+      "detection": 1,
+      "change": "+ \u2192 \u2212"
+    },
+    {
+      "round": 3,
+      "t_sample_us": 2.18,
+      "t_result_us": 2.78,
+      "dtheta_true_deg": 108.499,
+      "dtheta_qutip_deg": 108.499,
+      "bloch_length": 1.0,
+      "p_flip": 0.6586,
+      "syndrome": "-1",
+      "detection": 0,
+      "change": "none"
+    },
+    {
+      "round": 4,
+      "t_sample_us": 3.18,
+      "t_result_us": 3.78,
+      "dtheta_true_deg": 63.49,
+      "dtheta_qutip_deg": 63.49,
+      "bloch_length": 1.0,
+      "p_flip": 0.2768,
+      "syndrome": "-1",
+      "detection": 0,
+      "change": "none"
+    },
+    {
+      "round": 5,
+      "t_sample_us": 4.18,
+      "t_result_us": 4.78,
+      "dtheta_true_deg": 15.62,
+      "dtheta_qutip_deg": 15.62,
+      "bloch_length": 1.0,
+      "p_flip": 0.0185,
+      "syndrome": "-1",
+      "detection": 0,
+      "change": "none"
+    },
+    {
+      "round": 6,
+      "t_sample_us": 5.18,
+      "t_result_us": 5.78,
+      "dtheta_true_deg": -8.248,
+      "dtheta_qutip_deg": -8.248,
+      "bloch_length": 1.0,
+      "p_flip": 0.0052,
+      "syndrome": "-1",
+      "detection": 0,
+      "change": "none"
+    },
+    {
+      "round": 7,
+      "t_sample_us": 6.18,
+      "t_result_us": 6.78,
+      "dtheta_true_deg": 3.827,
+      "dtheta_qutip_deg": 3.827,
+      "bloch_length": 1.0,
+      "p_flip": 0.0011,
+      "syndrome": "-1",
+      "detection": 0,
+      "change": "none"
+    },
+    {
+      "round": 8,
+      "t_sample_us": 7.18,
+      "t_result_us": 7.78,
+      "dtheta_true_deg": -4.031,
+      "dtheta_qutip_deg": -4.031,
+      "bloch_length": 1.0,
+      "p_flip": 0.0012,
+      "syndrome": "-1",
+      "detection": 0,
+      "change": "none"
+    }
+  ]
+}
