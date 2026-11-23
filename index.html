@@ -13,7 +13,7 @@
   <div class="kicker">Simulation 1 · MSQT research</div>
   <h1>From phase noise to error correction</h1>
   <p>An interactive walkthrough of one idea: when noise hits a transmon qubit, how long does it take a stabilizer to notice, and what can the detection record tell us about the noise?</p>
-  <p class="note">Seven chapters, each with a hands-on simulation. No quantum background needed. Start at the top and work down.</p>
+  <p class="note">Seven chapters, each with a hands-on simulation. No quantum background needed. Start at the top and work down. When you are ready, the <a href="lab.html" style="color:var(--accent)">Simulation Lab</a> lets you control every noise and timing parameter yourself.</p>
 </header>
 
 <nav class="toc"><div class="inner">
@@ -24,6 +24,7 @@
   <a href="#ch5">5 · Gate schedule</a>
   <a href="#ch6">6 · The decoder</a>
   <a href="#ch7">7 · The thesis</a>
+  <a href="lab.html" style="border-color:var(--accent);color:var(--accent)">Open the Lab →</a>
 </div></nav>
 
 <main>
@@ -171,6 +172,7 @@
   </div>
   <p>With the defaults, Q1 is hit at 200 ns, just after its CNOT ended at 180 ns, so it is caught in round 2. The same hit on Q2, Q3 or Q4 is caught in round 1. <b>Same moment, different qubit, different round.</b> This gate-scheduling effect can make two simultaneous errors look like noise travelling from one qubit to another, which is exactly what a timing-aware decoder must not be fooled by.</p>
   <div class="takeaway"><b>Takeaway:</b> detection latency = waiting for the next CNOT + waiting for the readout. Which round an error appears in depends on when it hits, which qubit it hits, and how strong it is.</div>
+  <p>Want to set the noise start time, duration, decay, propagation, gate times, readout and reset yourself? Open the <a href="lab.html" style="color:var(--accent)">Simulation Lab</a>.</p>
   <a class="next" href="#ch6">Next: how the decoder turns detection events into a correction →</a>
 </section>
 

@@ -6,6 +6,17 @@ An interactive, beginner-friendly walkthrough of the MSQT research project: how 
 
 No install, no build step, no internet needed: plain HTML, CSS and JavaScript.
 
+## Simulation Lab (`lab.html`)
+
+A separate page where you control every parameter yourself and see when a weight-4 stabilizer first detects the noise:
+
+- **Noise:** which qubit it starts on, start time, duration, decay time, peak strength (kHz), steady or OU-fluctuating (with memory τc)
+- **Propagation:** spread to neighbouring qubits, delay per hop, strength kept per hop
+- **Circuit timing:** ancilla reset, Hadamard, CNOT, readout, electronics delay, cycle time
+- **Outputs:** an animated shot, a timeline of the noise on each qubit with the CNOT sample times and detections, and 2,000-shot statistics (detection probability, mean/median latency, detection rate per round)
+
+Presets: typical transmon drift (15 kHz, OU), strong TLS burst (140 kHz), burst spreading across qubits, fast circuit (300 ns cycle).
+
 ## Chapters
 
 | # | Chapter | What you can do |
@@ -39,4 +50,6 @@ js/ch3-check.js     Chapter 3
 js/ch4-zeno.js      Chapter 4
 js/ch5-schedule.js  Chapter 5
 js/ch6-mwpm.js      Chapter 6
+lab.html            Simulation Lab page
+js/ch8-lab.js       Simulation Lab model and drawing
 ```
