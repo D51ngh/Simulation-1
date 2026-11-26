@@ -1,4 +1,6 @@
-# Simulation 1 · From phase noise to error correction
+# Decoding Drifting Noise
+
+Interactive research companion to my M.S. thesis at San José State University (advisors: Prof. Hilary Hurst and Prof. Robert Morelos-Zaragoza). **Live site:** https://d51ngh.github.io/Simulation-1/ · **Research summary:** [report.html](report.html) · **Author:** [Damanpreet Singh](https://d51ngh.github.io)
 
 An interactive walkthrough of the MSQT research project: how phase noise on a transmon qubit becomes stabilizer detection events, how long it takes a stabilizer to notice the noise, and how a minimum-weight perfect matching (MWPM) decoder turns detection events into a correction.
 

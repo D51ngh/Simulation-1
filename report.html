@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research summary · Decoding Drifting Noise</title>
+<meta name="description" content="A short research summary by Damanpreet Singh: how time-correlated qubit noise shows up in surface-code error correction.">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .byline { color: var(--text2); font-size: 15px; margin: 0 0 6px; }
+  .glance { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 18px 0 6px; }
+  .glance div { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 12px 14px; font-size: 14px; color: var(--text2); }
+  .glance b { display: block; color: var(--text); font-size: 15px; margin-bottom: 4px; }
+  @media (max-width: 680px) { .glance { grid-template-columns: 1fr; } }
+  figure { margin: 14px 0 18px; }
+  figure img { width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  ol.refs { font-size: 14px; color: var(--text2); padding-left: 20px; }
+  ol.refs li { margin-bottom: 6px; }
+  .links a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Research summary · M.S. thesis, San José State University</div>
+  <h1>When qubit noise has memory</h1>
+  <p>A short report on how time-correlated noise in superconducting qubits shows up in surface-code error correction, and what a decoder might do about it.</p>
+  <p class="byline"><b>Damanpreet Singh</b> · M.S. Quantum Technology · Advisors: Prof. Hilary Hurst and Prof. Robert Morelos-Zaragoza · November 2026</p>
+  <p class="note links"><a href="https://d51ngh.github.io">About me</a> · <a href="index.html">Interactive walkthrough</a> · <a href="lab.html">Simulation Lab</a> · <a href="qutip.html">QuTiP check</a></p>
+  <div class="glance">
+    <div><b>The problem</b>Real qubit noise drifts and lingers, but most decoders assume every round of errors is independent.</div>
+    <div><b>The question</b>How much of the noise's memory survives into the error-correction record, and can a decoder use it?</div>
+    <div><b>So far</b>A full noise-to-syndrome simulation chain, interactive tools, and a QuTiP cross-check of the phase model.</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="inner">
+  <a href="#why">1 · Why it matters</a>
+  <a href="#model">2 · Model</a>
+  <a href="#built">3 · What I built</a>
+  <a href="#example">4 · Worked example</a>
+  <a href="#next">5 · Next steps</a>
+  <a href="#limits">6 · Limitations</a>
+  <a href="#me">About me</a>
+</div></nav>
+
+<main>
+
+<section class="chapter" id="why">
+  <div class="kicker">1</div>
+  <h2>Why this matters</h2>
+  <p>Quantum computers make mistakes because their hardware is noisy. Quantum error correction protects information by spreading one logical qubit over many physical qubits and checking them over and over with <b>stabilizer measurements</b>. A <b>decoder</b> reads the results of those checks and works out which correction to apply.</p>
+  <p>Most decoders are built on a simplifying assumption: errors in one round have nothing to do with errors in the next. Real superconducting qubits don't quite work that way. Their frequency drifts because of flux noise, charge noise and two-level defects (TLS), and that drift can last for microseconds, which is many rounds of error correction. In other words, the noise has <b>memory</b>.</p>
+  <div class="takeaway"><b>Research question:</b> how much of the noise memory survives through the qubit and the stabilizer circuit into the syndrome record, and can a decoder use it to reduce logical errors?</div>
+</section>
+
+<section class="chapter" id="model">
+  <div class="kicker">2</div>
+  <h2>The model, one link at a time</h2>
+  <p>I follow the noise through every step from the physical environment to the decoder:</p>
+  <div class="math">OU noise δω(t) → H(t) = ħδω(t)Z/2 → phase θ = ∫δω dt → Z error, P = sin²(θ/2) → syndrome → detection event → decoder</div>
+  <p>The frequency noise is an <b>Ornstein–Uhlenbeck (OU) process</b>, dξ = −(ξ/τ<sub>c</sub>)dt + σdW, whose correlation time τ<sub>c</sub> sets how long the noise "remembers" its past. Each stabilizer check projects the accumulated phase tilt θ into either "no error" (probability cos²(θ/2)) or a full Z flip (probability sin²(θ/2)). A detection event is a change in the check result between rounds, d<sub>r</sub> = s<sub>r</sub> ⊕ s<sub>r−1</sub>.</p>
+  <p>That gives three memory times to track:</p>
+  <table class="simple">
+    <tr><th>Time scale</th><th>Meaning</th></tr>
+    <tr><td>τ<sub>environment</sub> (τ<sub>c</sub>)</td><td>How long the noise itself stays correlated</td></tr>
+    <tr><td>τ<sub>qubit</sub></td><td>How long that history remains in the qubit's phase</td></tr>
+    <tr><td>τ<sub>syndrome</sub></td><td>How much correlation is left in the detection events after repeated measurement</td></tr>
+  </table>
+  <p>The decoder only ever sees τ<sub>syndrome</sub>, so the first task is to measure how τ<sub>c</sub> maps onto it.</p>
+</section>
+
+<section class="chapter" id="built">
+  <div class="kicker">3</div>
+  <h2>What I built</h2>
+  <p>To build intuition and test each link before scaling up, I wrote three tools that run in the browser or in Python:</p>
+  <table class="simple">
+    <tr><th>Tool</th><th>What it does</th></tr>
+    <tr><td><a href="index.html" style="color:var(--accent)">Interactive walkthrough</a></td><td>Seven steps from a single qubit's phase to a distance-3 surface code with a minimum-weight perfect matching (MWPM) decoder, each with a live simulation.</td></tr>
+    <tr><td><a href="lab.html" style="color:var(--accent)">Simulation Lab</a></td><td>A weight-4 stabilizer with adjustable noise (steady or OU), spreading between qubits, and gate timing. It records detection probability, detection latency and the full syndrome history over many shots, with CSV export.</td></tr>
+    <tr><td><a href="qutip.html" style="color:var(--accent)">QuTiP cross-check</a></td><td>Evolves a data qubit under H(t) with QuTiP and checks that the phase recovered from the quantum state matches the analytic model (they agree to 0.01°).</td></tr>
+  </table>
+  <p>Throughout, the simulation keeps the true noise history separate from what a decoder can see, so every inference can be checked against ground truth.</p>
+</section>
+
+<section class="chapter" id="example">
+  <div class="kicker">4</div>
+  <h2>A worked example</h2>
+  <p>Here is one run of the QuTiP simulation: a strong, TLS-like burst of OU noise (140 kHz peak, τ<sub>c</sub> = 2 µs) that starts at 0.3 µs and lasts 7 µs, checked by an X stabilizer once every 1 µs for 8 rounds.</p>
+  <figure>
+    <img src="qutip_sim/output/angle_changes.png" alt="Top: frequency noise over 8 microseconds. Bottom: phase accumulated since the last check in each round, with a detection in round 2.">
+    <figcaption>Top: the frequency noise δω(t). Bottom: the phase the qubit picks up between checks. Each vertical line is a stabilizer check; the dot marks the detection event.</figcaption>
+  </figure>
+  <table class="simple">
+    <tr><th>Round</th><th>Phase since last check</th><th>P(flip)</th><th>Syndrome</th><th>Detection</th></tr>
+    <tr><td>1</td><td>0.0°</td><td>0.00</td><td>+1</td><td>—</td></tr>
+    <tr><td>2</td><td>99.3°</td><td>0.58</td><td>−1</td><td><b>Yes</b></td></tr>
+    <tr><td>3</td><td>108.5°</td><td>0.66</td><td>−1</td><td>—</td></tr>
+    <tr><td>4</td><td>63.5°</td><td>0.28</td><td>−1</td><td>—</td></tr>
+    <tr><td>5–8</td><td>below 16°</td><td>≤ 0.02</td><td>−1</td><td>—</td></tr>
+  </table>
+  <p><b>What this shows.</b> The noise lasted about 7 µs, but in this shot it left just one detection event. After the first flip the qubit stays flipped, and the strong phase in rounds 3 and 4 happened not to flip it back. Whether it does is random, which is exactly why a single shot can hide the noise's memory and why the Lab collects statistics over many shots. Telling these cases apart from independent noise is the core of what a correlation-aware decoder would need to do.</p>
+</section>
+
+<section class="chapter" id="next">
+  <div class="kicker">5</div>
+  <h2>Where this is going</h2>
+  <p>The work is organized as a ladder of experiments, each adding one ingredient:</p>
+  <table class="simple">
+    <tr><th>Stage</th><th>Setup</th><th>Purpose</th></tr>
+    <tr><td>P0</td><td>No noise</td><td>Control: no detection events</td></tr>
+    <tr><td>P1</td><td>Single Z error at a set time</td><td>Latency from the gate schedule alone</td></tr>
+    <tr><td>P2</td><td>Constant frequency offset</td><td>Adds phase build-up time</td></tr>
+    <tr><td>P3</td><td>OU noise</td><td>Effect of noise memory on latency</td></tr>
+    <tr><td>P4</td><td>Sweep cycle time T and τ<sub>c</sub></td><td>Find where the behavior changes</td></tr>
+    <tr><td>P5</td><td>Inference from many shots</td><td>Recover the phase per round</td></tr>
+    <tr><td>P6</td><td>Distance-3 code with MWPM</td><td>Logical error rate versus τ<sub>c</sub></td></tr>
+    <tr><td>P7</td><td>Correlation-aware decoder</td><td>Test whether noise-informed weights reduce the logical error rate</td></tr>
+  </table>
+  <p>The interactive tools cover the single-stabilizer stages. The next steps are P6 and P7: full multi-round surface-code circuits in Stim, decoded with space-time MWPM in PyMatching, at distances 3, 5 and 7, first with standard weights and then with weights informed by the noise correlation time.</p>
+</section>
+
+<section class="chapter" id="limits">
+  <div class="kicker">6</div>
+  <h2>Limitations, stated plainly</h2>
+  <p>This is a deliberately simple model so each link can be checked on its own. It uses a two-level qubit with noise entering only through a frequency shift. It does not yet include the multilevel transmon, T₁/T₂ decay, leakage, gate or measurement errors, or the shared entangled state of a real surface code. The MWPM decoder in the walkthrough is a one-round teaching example. Gate timings (1 µs cycle, 60 ns CNOT, 300 ns readout) are illustrative values, not measurements from a specific device.</p>
+</section>
+
+<section class="chapter" id="me">
+  <div class="kicker">About me</div>
+  <h2>Why I'm working on this</h2>
+  <p>I came to quantum computing from computer science and economics, after two years in industry building tools that automate tedious work. What drew me to error correction is that it sits right where physics, information theory and engineering meet, and that real hardware keeps breaking the tidy assumptions our models make. I built these tools partly to understand the problem myself and partly so others can see it too.</p>
+  <p>I'm applying to PhD programs in quantum error correction and fault-tolerant quantum computing for Fall 2027. If this work interests you, I'd be glad to hear from you: <a href="https://d51ngh.github.io" style="color:var(--accent)">d51ngh.github.io</a> · <a href="https://www.linkedin.com/in/daman-singh-63414728a" style="color:var(--accent)">LinkedIn</a> · <a href="https://github.com/d51ngh" style="color:var(--accent)">GitHub</a>.</p>
+</section>
+
+<section class="chapter" id="refs">
+  <div class="kicker">References</div>
+  <h2>Further reading</h2>
+  <ol class="refs">
+    <li>A. G. Fowler, M. Mariantoni, J. M. Martinis and A. N. Cleland, "Surface codes: Towards practical large-scale quantum computation," <i>Phys. Rev. A</i> 86, 032324 (2012).</li>
+    <li>Google Quantum AI, "Suppressing quantum errors by scaling a surface code logical qubit," <i>Nature</i> 614, 676–681 (2023).</li>
+    <li>C. Gidney, "Stim: a fast stabilizer circuit simulator," <i>Quantum</i> 5, 497 (2021).</li>
+    <li>O. Higgott, "PyMatching: A Python package for decoding quantum codes with minimum-weight perfect matching," <i>ACM Trans. Quantum Comput.</i> 3, 16 (2022).</li>
+    <li>G. E. Uhlenbeck and L. S. Ornstein, "On the theory of the Brownian motion," <i>Phys. Rev.</i> 36, 823 (1930).</li>
+    <li>J. R. Johansson, P. D. Nation and F. Nori, "QuTiP 2: A Python framework for the dynamics of open quantum systems," <i>Comput. Phys. Commun.</i> 184, 1234 (2013).</li>
+  </ol>
+</section>
+
+</main>
+
+<footer>
+  Decoding Drifting Noise · Damanpreet Singh · San José State University. Parameter values are illustrative. <a href="index.html" style="color:var(--accent)">Walkthrough</a> · <a href="lab.html" style="color:var(--accent)">Lab</a>
+</footer>
+</body>
+</html>

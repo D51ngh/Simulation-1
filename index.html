@@ -3,10 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Simulation 1 · From phase noise to error correction</title>
+<title>Decoding Drifting Noise · Interactive walkthrough by Damanpreet Singh</title>
 <meta name="description" content="Interactive walkthrough of how phase noise on a transmon qubit becomes stabilizer detection events and how a decoder corrects it.">
 <link rel="stylesheet" href="css/style.css">
 <style>
+  .start { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 18px 0 10px; }
+  .start a { display: block; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 12px 14px; text-decoration: none; color: var(--text2); font-size: 14px; }
+  .start a:hover { border-color: var(--accent); }
+  .start b { display: block; color: var(--accent); font-size: 15px; margin-bottom: 2px; }
+  @media (max-width: 680px) { .start { grid-template-columns: 1fr; } }
   .err { font-size: 13px; color: var(--coral-dark); }
   input[type=number] { font: inherit; font-size: 14px; width: 110px; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); }
 </style>
@@ -14,9 +19,15 @@
 <body>
 
 <header class="hero">
-  <div class="kicker">Simulation 1 · MSQT research</div>
-  <h1>From phase noise to error correction</h1>
-  <p>This project studies how phase noise on a transmon qubit is detected by stabilizer measurements, and how long detection takes. The seven steps below build the model one piece at a time, each with an interactive simulation.</p>
+  <div class="kicker">Interactive research companion · Damanpreet Singh · San José State University</div>
+  <h1>Decoding Drifting Noise</h1>
+  <p>Hi, I'm Daman, an M.S. student in Quantum Technology at San José State University. Real qubits drift: their noise lingers for microseconds instead of resetting every instant. My thesis asks how that memory shows up in surface-code error correction, and whether a decoder can use it.</p>
+  <p>The seven short steps below build the idea one piece at a time, from a single qubit's phase to a working decoder, each with a live simulation you can play with.</p>
+  <div class="start">
+    <a href="report.html"><b>Read the summary →</b>A 5-minute research report: the question, the model and a worked example.</a>
+    <a href="#ch1"><b>Explore step by step ↓</b>Seven interactive steps, no background in error correction needed.</a>
+    <a href="lab.html"><b>Run experiments →</b>Set the noise and gate timing yourself and collect statistics.</a>
+  </div>
   <p class="note">The <a href="lab.html" style="color:var(--accent)">Simulation Lab</a> lets you set every noise and timing parameter directly. All values are illustrative, not device measurements.</p>
 </header>
 
@@ -28,6 +39,7 @@
   <a href="#ch5">Step 5 · Gate timing</a>
   <a href="#ch6">Step 6 · Decoder</a>
   <a href="#ch7">Step 7 · Summary</a>
+  <a href="report.html" style="border-color:var(--accent);color:var(--accent)">Research summary →</a>
   <a href="lab.html" style="border-color:var(--accent);color:var(--accent)">Open the Lab →</a>
   <a href="qutip.html" style="border-color:var(--accent);color:var(--accent)">QuTiP simulation →</a>
 </div></nav>
@@ -259,7 +271,7 @@
 </main>
 
 <footer>
-  Simulation 1 · MSQT research on finite-memory noise and surface-code syndromes. Parameter values are illustrative. <a href="lab.html" style="color:var(--accent)">Simulation Lab</a>
+  Decoding Drifting Noise · Damanpreet Singh, M.S. thesis research at San José State University (advisors: Prof. Hilary Hurst and Prof. Robert Morelos-Zaragoza). <a href="report.html" style="color:var(--accent)">Research summary</a> · Parameter values are illustrative. <a href="lab.html" style="color:var(--accent)">Simulation Lab</a>
 </footer>
 
 <script src="js/common.js"></script>
